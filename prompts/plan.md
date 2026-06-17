@@ -4,7 +4,19 @@ argument-hint: "<goal>"
 ---
 Create an implementation plan for: $ARGUMENTS
 
-Start with an evaluation. Do not skip this step.
+Understand the request before planning. Do not skip this step.
+
+First:
+- Restate what the user is asking for in plain language.
+- Identify ambiguities, missing facts, and assumptions that could change the plan.
+- Call out anything that is not clear.
+- Treat assumptions as risky until validated; dangerous or consequential assumptions should be clarified early.
+
+If an ambiguity could materially change scope, implementation approach, risk, acceptance criteria, or whether the work should be done at all, stop before showing a plan and ask targeted clarifying questions.
+
+If the remaining assumptions are low-risk, state them explicitly and continue.
+
+Then start with an evaluation. Do not skip this step.
 
 Evaluate:
 - Scope: small, medium, or large.

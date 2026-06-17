@@ -12,6 +12,23 @@ describe("plan prompt template", () => {
     expect(lowerPrompt).not.toContain("extension, skill, prompt, theme");
   });
 
+  it("requires understanding and clarification before planning", () => {
+    expect(lowerPrompt).toContain("understand the request before planning");
+    expect(lowerPrompt).toContain("restate what the user is asking for");
+    expect(lowerPrompt).toContain("identify ambiguities, missing facts, and assumptions");
+    expect(lowerPrompt).toContain("call out anything that is not clear");
+    expect(lowerPrompt).toContain("assumptions as risky until validated");
+  });
+
+  it("stops to clarify material ambiguities before showing a plan", () => {
+    expect(lowerPrompt).toContain("could materially change scope");
+    expect(lowerPrompt).toContain("implementation approach");
+    expect(lowerPrompt).toContain("acceptance criteria");
+    expect(lowerPrompt).toContain("stop before showing a plan");
+    expect(lowerPrompt).toContain("ask targeted clarifying questions");
+    expect(lowerPrompt).toContain("remaining assumptions are low-risk");
+  });
+
   it("requires an early evaluation step", () => {
     expect(lowerPrompt).toContain("start with an evaluation");
     expect(lowerPrompt).toContain("scope: small, medium, or large");
