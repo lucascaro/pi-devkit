@@ -18,7 +18,7 @@
 | Command | Path | Purpose |
 | --- | --- | --- |
 | `/review` | `prompts/review.md` | Review code changes for bugs, safety, and maintainability. |
-| `/plan` | `prompts/plan.md` | Produce an implementation plan before coding. |
+| `/plan` | `prompts/plan.md` | Produce a generic implementation plan, route small changes to a lightweight plan, and wait for explicit approval before implementation. |
 
 ## Themes
 
