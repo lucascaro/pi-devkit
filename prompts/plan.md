@@ -31,4 +31,9 @@ Use a full plan when the change is medium or large, risky, cross-cutting, user-v
 - Acceptance criteria.
 - Commands to run before shipping.
 
-After presenting the plan, stop and ask for feedback. Refine the plan until the user explicitly accepts it. Do not start implementation until the user says "approved", "go", "implement", or an equivalent explicit approval.
+After presenting the plan, stop and ask what the user wants to do next. Offer these choices explicitly:
+- Accept and implement the plan.
+- Edit or refine part of the plan.
+- Continue discussing or chatting without implementing.
+
+If the user chooses to edit or refine, update the plan and ask again. If the user chooses to continue discussing, answer normally and keep the implementation gate closed. Do not start implementation until the user says "approved", "accept", "go", "implement", or an equivalent explicit approval.

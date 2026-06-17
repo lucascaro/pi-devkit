@@ -26,7 +26,7 @@ pi install ./
 - `extensions/guardrails` - blocks high-risk bash commands unless confirmed.
 - `skills/pi-package-author` - workflow for authoring Pi packages.
 - `prompts/review.md` - reusable review prompt.
-- `prompts/plan.md` - generic planning prompt with lightweight/full plan routing and an approval gate.
+- `prompts/plan.md` - generic planning prompt with lightweight/full plan routing and interactive accept/edit/chat choices.
 - `themes/lucas-dark.json` - complete custom Pi theme.
 
 See `docs/catalog.md` for the maintained inventory.
@@ -57,7 +57,7 @@ Create a plan without immediately implementing:
 /plan add a statusline extension
 ```
 
-The plan prompt evaluates scope and risk, chooses a lightweight or full plan, then asks for feedback. Implementation should start only after explicit approval.
+The plan prompt evaluates scope and risk, chooses a lightweight or full plan, then asks whether to accept and implement, edit the plan, or keep chatting. Implementation should start only after explicit approval.
 
 ## Pi package manifest
 

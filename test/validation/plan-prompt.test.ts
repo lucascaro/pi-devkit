@@ -27,11 +27,19 @@ describe("plan prompt template", () => {
     expect(lowerPrompt).toContain("cross-cutting");
   });
 
+  it("asks for an explicit next action after showing the plan", () => {
+    expect(lowerPrompt).toContain("ask what the user wants to do next");
+    expect(lowerPrompt).toContain("accept and implement the plan");
+    expect(lowerPrompt).toContain("edit or refine part of the plan");
+    expect(lowerPrompt).toContain("continue discussing or chatting without implementing");
+  });
+
   it("requires refinement and explicit approval before implementation", () => {
-    expect(lowerPrompt).toContain("ask for feedback");
-    expect(lowerPrompt).toContain("refine the plan until the user explicitly accepts it");
+    expect(lowerPrompt).toContain("if the user chooses to edit or refine, update the plan and ask again");
+    expect(lowerPrompt).toContain("keep the implementation gate closed");
     expect(lowerPrompt).toContain("do not start implementation until");
     expect(prompt).toContain('"approved"');
+    expect(prompt).toContain('"accept"');
     expect(prompt).toContain('"implement"');
   });
 });
