@@ -47,7 +47,11 @@
     "validate:skills": "tsx scripts/validate-skills.ts",
     "validate:themes": "tsx scripts/validate-themes.ts",
     "validate:prompts": "tsx scripts/validate-prompts.ts",
-    "validate": "npm run validate:skills && npm run validate:themes && npm run validate:prompts",
+    "validate:extensions": "tsx scripts/validate-extensions.ts",
+    "validate:pi-manifest": "tsx scripts/validate-pi-manifest.ts",
+    "validate:files": "tsx scripts/validate-files.ts",
+    "validate": "npm run validate:skills && npm run validate:themes && npm run validate:prompts && npm run validate:extensions && npm run validate:pi-manifest && npm run validate:files",
+    "generate:catalog": "tsx scripts/generate-catalog.ts > docs/catalog.md",
     "check": "npm run typecheck && npm run validate && npm run test"
   }
 }

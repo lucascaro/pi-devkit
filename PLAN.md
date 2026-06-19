@@ -1,40 +1,123 @@
-# pi-devkit Plan
+# pi-devkit Toolkit Analysis & Improvement Plan
 
 ## Goal
 
-Create a well-maintained Pi package repository for developing, tracking, testing, and sharing Pi customizations.
+Analyze the pi-devkit toolkit for quality gaps, fix critical issues, and propose new features that would improve developer experience and reliability.
 
-## Package strategy
+---
 
-Use Pi's package system instead of forking Pi. The repository exposes conventional resource directories through `package.json`:
+## Tier 1: Fixes & Gaps
 
-- `extensions/` for TypeScript extensions.
-- `skills/` for Agent Skills-compatible workflows.
-- `prompts/` for reusable prompt templates.
-- `themes/` for complete Pi TUI themes.
+### 1. Validate `package.json` `pi` paths exist
+**Problem:** Validation scripts never verify that paths declared in `package.json`'s `pi` key actually exist or contain valid resources. A typo silently breaks `pi install`.
 
-## Quality bar
+**Changes:**
+- `scripts/validate-pi-manifest.ts` — new script that reads `package.json`'s `pi` key, verifies each path exists and is non-empty.
+- `test/validation/pi-manifest.test.ts` — new test file.
+- Update `package.json` scripts and `validate` command.
 
-- TypeScript strict mode for extension and helper code.
-- Unit tests for extension registration and shared logic.
-- Validation scripts for skill frontmatter, prompt frontmatter, and theme token completeness.
-- GitHub Actions running `npm run check` on every push and pull request.
-- Docs catalog updated when resources are added or removed.
-- Changelog updated for user-visible changes.
+### 2. Relax skill description min length
+**Problem:** `scripts/validate-skills.ts` enforces a 40-char minimum on descriptions, which is arbitrary — well-written 38-char descriptions fail.
 
-## Initial deliverables
+**Changes:**
+- `scripts/validate-skills.ts` — lower threshold to 20 chars or add a specificity check instead of rigid minimum.
 
-- Package manifest installable by `pi install git:github.com/lucascaro/pi-devkit`.
-- Starter `hello` extension.
-- Starter `guardrails` extension.
-- Starter Pi package authoring skill.
-- Review and plan prompt templates.
-- Complete Lucas dark theme.
-- Validation scripts, tests, CI, README, security docs, and catalog.
+### 3. Add extension structure validation
+**Problem:** No script verifies that each extension directory has a valid `index.ts` with the correct export signature.
 
-## Next improvements
+**Changes:**
+- `scripts/validate-extensions.ts` — new script. Checks each extension dir has `index.ts`, it exports a default function accepting `ExtensionAPI`.
+- `test/validation/extension-validation.test.ts` — new test file.
+- Update validation pipeline.
 
-- Add release workflow for npm publishing.
-- Add screenshots or GIFs for package gallery metadata.
-- Add end-to-end smoke tests gated behind `PI_E2E=1`.
-- Add more personal workflow extensions as they stabilize.
+### 4. Test dangerous-command edge cases
+**Problem:** `test/validation/dangerous-command.test.ts` lacks realistic edge cases.
+
+**Changes:**
+- `test/validation/dangerous-command.test.ts` — add tests for: nested quotes, multi-command chains, extra whitespace, case-insensitive matches, escaped characters.
+
+### 5. Auto-generate `docs/catalog.md`
+**Problem:** Catalog is manually maintained. Easy to forget updating when adding resources.
+
+**Changes:**
+- `scripts/generate-catalog.ts` — new script. Reads `package.json` `pi` key, walks resource dirs, reads frontmatter/index.ts, generates markdown tables.
+- CI adds a diff check so stale catalog fails.
+- `npm run generate:catalog` for manual regeneration.
+
+---
+
+## Tier 2: Important Improvements
+
+### 6. Add `pi-devkit` CLI for scaffolding
+**Problem:** Every new resource requires manual directory/file creation — the #1 friction point.
+
+**Changes:**
+- `bin/pi-devkit.ts` — new CLI entrypoint.
+- `pi-devkit new extension <name>` — scaffold extension with `index.ts`, README, test, validation registration.
+- `pi-devkit new skill <name>` — scaffold `SKILL.md` with frontmatter template.
+- `pi-devkit new prompt <name>` — scaffold prompt template.
+- `pi-devkit validate` — alias for `npm run check`.
+
+### 7. Validate `package.json` `files` list
+**Problem:** Missing files in the `files` array cause silent omission on `npm publish`.
+
+**Changes:**
+- `scripts/validate-files.ts` — new script. Verifies every listed file exists.
+- Add to validation pipeline.
+
+### 8. E2E smoke test for `pi install`
+**Problem:** No test verifies the package actually installs and loads in a real Pi instance.
+
+**Changes:**
+- `test/e2e/install-smoke.test.ts` — new test. Gate behind `PI_E2E=1` (CI won't run it).
+- Creates temp dir, runs `pi install ./`, verifies extensions load.
+
+---
+
+## Tier 3: Nice-to-Have (Future)
+
+### 9. Prompt argument-hint consistency check
+Validate that every prompt's `argument-hint` format is used and `$ARGUMENTS` references match.
+
+### 10. Theme export validation
+Validate `export.pageBg`, `export.cardBg`, `export.infoBg` use valid color values.
+
+### 11. Skill trigger keyword extraction
+Auto-extract "Use when" triggers from SKILL.md files and index for search.
+
+### 12. Bundle size check for extensions
+Measure each extension's file size, flag anything over a threshold (e.g., 50KB).
+
+### 13. Security audit script
+Build-time scan for: hardcoded secrets, `eval()`/`new Function()` in extensions, outdated deps with CVEs.
+
+### 14. Changelog CLI helper
+`pi-devkit changelog <type> <message>` — creates changeset or appends to CHANGELOG.md.
+
+---
+
+## Files to Change
+
+| Action | File | Description |
+|---|---|---|
+| New | `scripts/validate-pi-manifest.ts` | Validate pi paths exist |
+| New | `scripts/validate-extensions.ts` | Validate extension structure |
+| New | `scripts/generate-catalog.ts` | Auto-generate catalog |
+| New | `scripts/validate-files.ts` | Validate package.json files list |
+| New | `test/validation/pi-manifest.test.ts` | Tests for pi manifest validation |
+| New | `test/validation/extension-validation.test.ts` | Tests for extension validator |
+| New | `test/e2e/install-smoke.test.ts` | E2E smoke test (gated) |
+| Changed | `scripts/validate-skills.ts` | Relax description min length |
+| Changed | `test/validation/dangerous-command.test.ts` | Add edge case tests |
+| Changed | `package.json` | Add new scripts, new files entry |
+| Changed | `docs/catalog.md` | Regenerated by new script |
+| Changed | `.github/workflows/ci.yml` | Add new validation steps |
+
+## Acceptance Criteria
+
+1. All 4 existing validation scripts + new ones pass in CI.
+2. Every `pi` path in `package.json` is verified to exist and be non-empty.
+3. Every extension directory is verified to have a valid `index.ts`.
+4. `docs/catalog.md` can be regenerated and matches current state.
+5. `dangerous-command` tests cover at least 10 edge cases beyond current ones.
+6. `npm run check` still passes with all changes.

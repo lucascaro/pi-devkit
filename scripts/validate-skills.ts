@@ -16,7 +16,7 @@ for (const file of skillFiles) {
   if (!namePattern.test(fm.name) || fm.name.includes("--")) fail(`${file}: invalid skill name ${fm.name}`);
   if (!fm.description) fail(`${file}: missing description`);
   if (fm.description.length > 1024) fail(`${file}: description exceeds 1024 chars`);
-  if (fm.description.length < 40) fail(`${file}: description is too vague`);
+  if (fm.description.length < 20) fail(`${file}: description is too vague (minimum 20 chars)`);
 }
 
 console.log(`Validated ${skillFiles.length} skill(s)`);

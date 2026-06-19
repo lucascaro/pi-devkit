@@ -30,4 +30,13 @@ Each resource type has validation:
 npm run validate:skills
 npm run validate:prompts
 npm run validate:themes
+npm run validate:extensions
+npm run validate:pi-manifest
+npm run validate:files
+```
+
+Auto-generate the catalog:
+
+```bash
+npm run generate:catalog
 ```

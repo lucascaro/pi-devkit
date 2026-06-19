@@ -15,3 +15,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Verify catalog is up to date
+        run: |
+          npx tsx scripts/generate-catalog.ts > /tmp/catalog.md
+          if ! diff -q docs/catalog.md /tmp/catalog.md >/dev/null; then
+            echo "ERROR: docs/catalog.md is out of date. Run 'npm run generate:catalog' to regenerate."
+            diff docs/catalog.md /tmp/catalog.md
+            exit 1
+          fi
