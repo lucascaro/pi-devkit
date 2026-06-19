@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | guardrails | `./extensions/guardrails` | Show pi-devkit guardrail status |
 | hello | `./extensions/hello` | Greet a person by name. Use for testing that pi-devkit custom tools are loaded. |
+| model-router | `./extensions/model-router` | Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles |
 
 ## Skills
 

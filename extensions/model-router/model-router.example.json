@@ -1,0 +1,60 @@
+{
+  "debug": false,
+  "classifierModel": "google/gemini-flash-latest",
+  "phaseBias": 0.5,
+  "maxSessionBudget": 1.0,
+  "models": {
+    "gpt-pro": {
+      "model": "openai/gpt-5.4",
+      "contextWindow": 256000,
+      "maxOutputTokens": 64000,
+      "thinkingLevels": ["high", "medium", "low"]
+    },
+    "sonnet": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "contextWindow": 200000
+    },
+    "flash": {
+      "model": "google/gemini-flash-latest",
+      "contextWindow": 1048576
+    },
+    "haiku": {
+      "model": "anthropic/claude-haiku-4-5-20251001-v1:0",
+      "contextWindow": 200000,
+      "maxOutputTokens": 8192,
+      "reasoning": false
+    }
+  },
+  "rules": [
+    {
+      "matches": ["deploy", "production", "release"],
+      "tier": "high",
+      "reason": "Safety check for production tasks"
+    }
+  ],
+  "profiles": {
+    "balanced": {
+      "high": {
+        "model": "gpt-pro",
+        "thinking": "high",
+        "fallbacks": ["sonnet"]
+      },
+      "medium": { "model": "sonnet", "thinking": "medium" },
+      "low": { "model": "flash", "thinking": "low" }
+    },
+    "cheap": {
+      "high": { "model": "flash", "thinking": "low" },
+      "medium": { "model": "flash", "thinking": "off" },
+      "low": { "model": "haiku", "thinking": "off" }
+    },
+    "deep": {
+      "high": {
+        "model": "gpt-pro",
+        "thinking": "xhigh",
+        "thinkingLevels": ["xhigh", "high", "medium", "low"]
+      },
+      "medium": { "model": "sonnet", "thinking": "medium" },
+      "low": { "model": "flash", "thinking": "low" }
+    }
+  }
+}

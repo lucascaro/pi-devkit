@@ -16,33 +16,7 @@ Analyze the pi-devkit toolkit for quality gaps, fix critical issues, and propose
 - `test/validation/pi-manifest.test.ts` — new test file.
 - Update `package.json` scripts and `validate` command.
 
-### 2. Relax skill description min length
-**Problem:** `scripts/validate-skills.ts` enforces a 40-char minimum on descriptions, which is arbitrary — well-written 38-char descriptions fail.
-
-**Changes:**
-- `scripts/validate-skills.ts` — lower threshold to 20 chars or add a specificity check instead of rigid minimum.
-
-### 3. Add extension structure validation
-**Problem:** No script verifies that each extension directory has a valid `index.ts` with the correct export signature.
-
-**Changes:**
-- `scripts/validate-extensions.ts` — new script. Checks each extension dir has `index.ts`, it exports a default function accepting `ExtensionAPI`.
-- `test/validation/extension-validation.test.ts` — new test file.
-- Update validation pipeline.
-
-### 4. Test dangerous-command edge cases
-**Problem:** `test/validation/dangerous-command.test.ts` lacks realistic edge cases.
-
-**Changes:**
-- `test/validation/dangerous-command.test.ts` — add tests for: nested quotes, multi-command chains, extra whitespace, case-insensitive matches, escaped characters.
-
-### 5. Auto-generate `docs/catalog.md`
-**Problem:** Catalog is manually maintained. Easy to forget updating when adding resources.
-
-**Changes:**
-- `scripts/generate-catalog.ts` — new script. Reads `package.json` `pi` key, walks resource dirs, reads frontmatter/index.ts, generates markdown tables.
-- CI adds a diff check so stale catalog fails.
-- `npm run generate:catalog` for manual regeneration.
+**Status:** ✅ Done — `1b56e6c`
 
 ---
 

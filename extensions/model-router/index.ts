@@ -1,0 +1,576 @@
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
+import {
+  type RouterConfig,
+  type RouterPersistedState,
+  type RoutingDecision,
+  type RouterPinByProfile,
+  type RouterThinkingByProfile,
+  type RouterTier,
+  type CustomSessionEntry,
+} from "./types.js";
+import {
+  loadRouterConfig,
+  profileNames,
+  resolveProfileName,
+  parseCanonicalModelRef,
+  ROUTER_TIERS,
+  getUnsupportedTiers,
+} from "./config.js";
+import { MAX_DEBUG_HISTORY } from "./constants.js";
+import { isRouterPersistedState, buildPersistedState } from "./state.js";
+import { updateStatus, formatModelRef } from "./ui.js";
+import { registerCommands } from "./commands.js";
+import { registerRouterProvider } from "./provider.js";
+
+const _routerExtensionMeta = {
+  description: "Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles",
+};
+
+const routerExtension = (pi: ExtensionAPI) => {
+  let currentConfig: RouterConfig = { profiles: {} };
+  let currentModelRegistry: ExtensionContext["modelRegistry"] | undefined;
+  let currentCwd = process.cwd();
+  let lastDecision: RoutingDecision | undefined;
+  let debugEnabled = false;
+  let routerEnabled = false;
+  let selectedProfile: string | undefined = undefined;
+  let widgetEnabled = false;
+  let lastRegisteredModels = "";
+  let pinnedTierByProfile: RouterPinByProfile = {};
+  let thinkingByProfile: RouterThinkingByProfile = {};
+  let debugHistory: RoutingDecision[] = [];
+  let lastNonRouterModel: string | undefined;
+  let accumulatedCost = 0;
+  let lastExtensionContext: ExtensionContext | undefined;
+  let lastConfigWarnings: string[] = [];
+  let lastConfigPath: string | undefined;
+  let lastPersistedSnapshot: string | undefined;
+  let isInitialized = false;
+  let isInternalModelSwitch = false;
+  let isInternalThinkingChange = false;
+  let isPersisting = false;
+
+  const setModelInternally = async (
+    model: NonNullable<ExtensionContext["model"]>,
+  ) => {
+    isInternalModelSwitch = true;
+    try {
+      return await pi.setModel(model);
+    } finally {
+      isInternalModelSwitch = false;
+    }
+  };
+
+  const setThinkingLevelInternally = (level: ThinkingLevel) => {
+    isInternalThinkingChange = true;
+    try {
+      pi.setThinkingLevel(level);
+    } finally {
+      isInternalThinkingChange = false;
+    }
+  };
+
+  const getPinnedTierForProfile = (
+    profileName: string,
+  ): RouterTier | undefined => pinnedTierByProfile[profileName];
+
+  const setPinnedTierForProfile = (
+    profileName: string,
+    tier: RouterTier | undefined,
+  ) => {
+    if (tier) {
+      pinnedTierByProfile[profileName] = tier;
+    } else {
+      delete pinnedTierByProfile[profileName];
+    }
+  };
+
+  const recordDebugDecision = (decision: RoutingDecision) => {
+    debugHistory = [...debugHistory, decision].slice(-MAX_DEBUG_HISTORY);
+  };
+
+  const getThinkingOverride = (profileName: string, tier: RouterTier) => {
+    return thinkingByProfile[profileName]?.[tier];
+  };
+
+  const persistState = () => {
+    // In-flight guard: skip if already persisting to avoid duplicate writes.
+    if (isPersisting) return;
+    isPersisting = true;
+    try {
+      const state = buildPersistedState(
+        routerEnabled,
+        selectedProfile,
+        pinnedTierByProfile,
+        thinkingByProfile,
+        debugEnabled,
+        widgetEnabled,
+        debugHistory,
+        lastDecision,
+        lastNonRouterModel,
+        accumulatedCost,
+      );
+      const snapshot = JSON.stringify({
+        ...state,
+        timestamp: 0,
+        lastDecision: state.lastDecision
+          ? { ...state.lastDecision, timestamp: 0 }
+          : undefined,
+        debugHistory: state.debugHistory?.map((decision) => ({
+          ...decision,
+          timestamp: 0,
+        })),
+      });
+      if (snapshot === lastPersistedSnapshot) {
+        return;
+      }
+      pi.appendEntry("router-state", state);
+      lastPersistedSnapshot = snapshot;
+    } finally {
+      isPersisting = false;
+    }
+  };
+
+  const actions = {
+    persistState,
+    syncPiThinkingLevel: setThinkingLevelInternally,
+    updateStatus: (ctx: ExtensionContext) =>
+      updateStatus(
+        ctx,
+        routerEnabled,
+        selectedProfile,
+        pinnedTierByProfile,
+        thinkingByProfile,
+        lastDecision,
+        lastNonRouterModel,
+        accumulatedCost,
+        widgetEnabled,
+        currentConfig,
+      ),
+    reloadConfig: (
+      ctx?: ExtensionContext,
+      options?: { preserveDebug?: boolean },
+    ) => {
+      const loaded = loadRouterConfig(currentCwd);
+      currentConfig = loaded.config;
+      lastConfigWarnings = loaded.warnings;
+      lastConfigPath = loaded.configPath;
+      if (!options?.preserveDebug) {
+        debugEnabled = currentConfig.debug ?? false;
+      }
+      selectedProfile = resolveProfileName(
+        currentConfig,
+        selectedProfile,
+      );
+      actions.registerRouterProvider();
+      if (ctx) {
+        actions.updateStatus(ctx);
+        if (lastConfigWarnings.length > 0) {
+          ctx.ui.notify(
+            `Router Configuration Warnings:\n${lastConfigWarnings.join(
+              "\n",
+            )}`,
+            "warning",
+          );
+        }
+      }
+    },
+    ensureValidActiveRouterProfile: async (ctx: ExtensionContext) => {
+      if (ctx.model?.provider !== "router") {
+        return;
+      }
+      if (currentConfig.profiles[ctx.model.id]) {
+        selectedProfile = ctx.model.id;
+        routerEnabled = true;
+        return;
+      }
+
+      ctx.ui.notify(
+        `Router profile "${ctx.model.id}" is no longer configured.`,
+        "warning",
+      );
+      routerEnabled = false;
+      selectedProfile = undefined;
+    },
+    switchToRouterProfile: async (
+      profileName: string,
+      ctx: ExtensionContext,
+      strict = true,
+    ) => {
+      if (!currentConfig.profiles[profileName]) {
+        if (strict) {
+          ctx.ui.notify(
+            `Unknown router profile: ${profileName}`,
+            "error",
+          );
+        }
+        return false;
+      }
+
+      actions.registerRouterProvider();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const routerModel = ctx.modelRegistry.find(
+        "router",
+        profileName,
+      );
+      if (!routerModel) {
+        ctx.ui.notify(
+          `Unknown router profile: ${profileName}`,
+          "error",
+        );
+        return false;
+      }
+      if (ctx.model && ctx.model.provider !== "router") {
+        lastNonRouterModel = `${ctx.model.provider}/${ctx.model.id}`;
+      }
+      const success = await setModelInternally(routerModel);
+      if (!success) {
+        ctx.ui.notify(
+          `Failed to switch to router/${profileName}`,
+          "error",
+        );
+        return false;
+      }
+      selectedProfile = profileName;
+      routerEnabled = true;
+      persistState();
+      actions.updateStatus(ctx);
+      return true;
+    },
+    registerRouterProvider: () => {
+      registerRouterProvider(
+        pi,
+        {
+          get lastRegisteredModels() {
+            return lastRegisteredModels;
+          },
+          set lastRegisteredModels(v) {
+            lastRegisteredModels = v;
+          },
+          get currentConfig() {
+            return currentConfig;
+          },
+          get currentModelRegistry() {
+            return currentModelRegistry;
+          },
+          get lastExtensionContext() {
+            return lastExtensionContext;
+          },
+          get selectedProfile() {
+            return selectedProfile;
+          },
+          set selectedProfile(v) {
+            selectedProfile = v;
+          },
+          get routerEnabled() {
+            return routerEnabled;
+          },
+          set routerEnabled(v) {
+            routerEnabled = v;
+          },
+          get lastDecision() {
+            return lastDecision;
+          },
+          set lastDecision(v) {
+            lastDecision = v;
+          },
+          thinkingByProfile,
+          pinnedTierByProfile,
+          get accumulatedCost() {
+            return accumulatedCost;
+          },
+          set accumulatedCost(v) {
+            accumulatedCost = v;
+          },
+        },
+        {
+          persistState,
+          recordDebugDecision,
+          getThinkingOverride,
+          updateStatus: actions.updateStatus,
+          syncPiThinkingLevel: setThinkingLevelInternally,
+        },
+      );
+    },
+  };
+
+  actions.reloadConfig();
+
+  const restoreStateFromSession = async (
+    ctx: ExtensionContext,
+  ) => {
+    lastExtensionContext = ctx;
+    currentModelRegistry = ctx.modelRegistry;
+    currentCwd = ctx.cwd;
+    actions.reloadConfig(ctx);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    routerEnabled = ctx.model?.provider === "router";
+    selectedProfile =
+      ctx.model?.provider === "router"
+        ? resolveProfileName(currentConfig, ctx.model.id)
+        : resolveProfileName(currentConfig, selectedProfile);
+    for (const key of Object.keys(pinnedTierByProfile)) {
+      delete pinnedTierByProfile[key];
+    }
+    for (const key of Object.keys(thinkingByProfile)) {
+      delete thinkingByProfile[key];
+    }
+    widgetEnabled = false;
+    debugHistory = [];
+    accumulatedCost = 0;
+    lastNonRouterModel =
+      ctx.model && ctx.model.provider !== "router"
+        ? `${ctx.model.provider}/${ctx.model.id}`
+        : lastNonRouterModel;
+    lastDecision = undefined;
+
+    const entries = ctx.sessionManager.getBranch() as CustomSessionEntry[];
+    const routerEntries = entries.filter(
+      (entry) =>
+        entry.type === "custom" &&
+        entry.customType === "router-state",
+    );
+    let savedState: RouterPersistedState | undefined;
+    for (let i = routerEntries.length - 1; i >= 0; i--) {
+      const entry = routerEntries[i];
+      if (entry && isRouterPersistedState(entry.data)) {
+        savedState = entry.data;
+        break;
+      }
+    }
+
+    if (isRouterPersistedState(savedState)) {
+      selectedProfile = resolveProfileName(
+        currentConfig,
+        savedState.selectedProfile,
+      );
+      routerEnabled = savedState.enabled;
+      if (savedState.pinByProfile) {
+        Object.assign(
+          pinnedTierByProfile,
+          savedState.pinByProfile,
+        );
+      }
+      if (savedState.thinkingByProfile) {
+        Object.assign(
+          thinkingByProfile,
+          savedState.thinkingByProfile,
+        );
+      }
+      if (savedState.pinTier && selectedProfile) {
+        pinnedTierByProfile[selectedProfile] = savedState.pinTier;
+      }
+      debugEnabled =
+        savedState.debugEnabled ?? debugEnabled;
+      widgetEnabled =
+        savedState.widgetEnabled ?? widgetEnabled;
+      debugHistory = savedState.debugHistory
+        ? [...savedState.debugHistory].slice(-MAX_DEBUG_HISTORY)
+        : [];
+      lastNonRouterModel =
+        savedState.lastNonRouterModel ?? lastNonRouterModel;
+      accumulatedCost =
+        savedState.accumulatedCost ?? 0;
+      lastDecision = savedState.lastDecision;
+    }
+
+    await actions.ensureValidActiveRouterProfile(ctx);
+
+    if (routerEnabled && selectedProfile) {
+      const routerModel = ctx.modelRegistry.find(
+        "router",
+        selectedProfile,
+      );
+      if (routerModel) {
+        const success = await setModelInternally(routerModel);
+        if (!success) {
+          ctx.ui.notify(
+            `Failed to restore router/${selectedProfile} after relaunch.`,
+            "warning",
+          );
+          routerEnabled = false;
+        } else if (lastDecision) {
+          setThinkingLevelInternally(lastDecision.thinking);
+        }
+      } else {
+        ctx.ui.notify(
+          `Unable to restore router/${selectedProfile}; model is unavailable.`,
+          "warning",
+        );
+        routerEnabled = false;
+        ctx.ui.setHiddenThinkingLabel?.();
+      }
+    } else {
+      ctx.ui.setHiddenThinkingLabel?.();
+    }
+
+    persistState();
+    actions.updateStatus(ctx);
+  };
+
+  registerCommands(
+    pi,
+    {
+      get currentConfig() {
+        return currentConfig;
+      },
+      get routerEnabled() {
+        return routerEnabled;
+      },
+      set routerEnabled(v) {
+        routerEnabled = v;
+      },
+      get selectedProfile() {
+        return selectedProfile;
+      },
+      set selectedProfile(v) {
+        selectedProfile = v;
+      },
+      pinnedTierByProfile,
+      thinkingByProfile,
+      get lastDecision() {
+        return lastDecision;
+      },
+      get lastNonRouterModel() {
+        return lastNonRouterModel;
+      },
+      set lastNonRouterModel(v) {
+        lastNonRouterModel = v;
+      },
+      get accumulatedCost() {
+        return accumulatedCost;
+      },
+      get debugEnabled() {
+        return debugEnabled;
+      },
+      set debugEnabled(v) {
+        debugEnabled = v;
+      },
+      get widgetEnabled() {
+        return widgetEnabled;
+      },
+      set widgetEnabled(v) {
+        widgetEnabled = v;
+      },
+      get debugHistory() {
+        return debugHistory;
+      },
+      get lastConfigWarnings() {
+        return lastConfigWarnings;
+      },
+      get lastConfigPath() {
+        return lastConfigPath;
+      },
+    },
+    actions,
+  );
+
+  pi.on("session_start", async (_event, ctx) => {
+    isInitialized = true;
+    await restoreStateFromSession(ctx);
+    if (debugEnabled) {
+      ctx.ui.notify(
+        `Router initialized with profiles: ${profileNames(currentConfig).join(", ")}`,
+        "info",
+      );
+    }
+  });
+
+  pi.on("model_select", async (event, ctx) => {
+    if (!isInitialized || isInternalModelSwitch) return;
+    if (event.model.provider === "router") {
+      const profileName = resolveProfileName(
+        currentConfig,
+        event.model.id,
+      );
+      if (!profileName) {
+        ctx.ui.notify(
+          `Unknown router profile: ${event.model.id}`,
+          "error",
+        );
+        return;
+      }
+
+      const registryModel = ctx.modelRegistry.find(
+        "router",
+        profileName,
+      );
+      if (
+        registryModel &&
+        (registryModel.contextWindow !==
+          event.model.contextWindow ||
+          registryModel.maxTokens !== event.model.maxTokens)
+      ) {
+        await setModelInternally(registryModel);
+      }
+
+      routerEnabled = true;
+      selectedProfile = profileName;
+    } else {
+      routerEnabled = false;
+      lastNonRouterModel = `${event.model.provider}/${event.model.id}`;
+      ctx.ui.setHiddenThinkingLabel?.();
+    }
+    persistState();
+    actions.updateStatus(ctx);
+  });
+
+  pi.on("turn_end", async (_event, ctx) => {
+    if (
+      routerEnabled &&
+      selectedProfile &&
+      ctx.model?.provider !== "router"
+    ) {
+      const routerModel = ctx.modelRegistry.find(
+        "router",
+        selectedProfile,
+      );
+      if (routerModel) {
+        await setModelInternally(routerModel);
+      }
+    }
+    persistState();
+    actions.updateStatus(ctx);
+  });
+
+  pi.on("thinking_level_select", (event, ctx) => {
+    if (!isInitialized || !routerEnabled || !selectedProfile)
+      return;
+    if (isInternalThinkingChange) return;
+
+    if (!thinkingByProfile[selectedProfile]) {
+      thinkingByProfile[selectedProfile] = {};
+    }
+    for (const t of ROUTER_TIERS) {
+      thinkingByProfile[selectedProfile]![t] = event.level;
+    }
+    persistState();
+    actions.updateStatus(ctx);
+    if (event.level !== "off") {
+      const profile = currentConfig.profiles[selectedProfile];
+      if (profile) {
+        const unsupported = getUnsupportedTiers(profile, event.level);
+        if (unsupported.length > 0) {
+          ctx.ui.notify(
+            `Router thinking (all) set to ${event.level}. ` +
+              `${unsupported.join(
+                ", ",
+              )} tier${
+                unsupported.length > 1 ? "s" : ""
+              } may not support '${event.level}'.`,
+            "warning",
+          );
+        }
+      }
+    }
+  });
+};
+
+export default routerExtension;

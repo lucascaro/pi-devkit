@@ -49,7 +49,7 @@ for (const dir of extDirs) {
 
   // Check that the source contains a default export
   const source = readFileSync(indexPath, "utf8");
-  if (!/export\s+default\s+function/.test(source) && !/export\s+default\s+\(/.test(source)) {
+  if (!/export\s+default\s+function/.test(source) && !/export\s+default\s+\(/.test(source) && !/export\s+default\s+\w+/.test(source)) {
     errors.push("index.ts does not have a default export");
   }
 
