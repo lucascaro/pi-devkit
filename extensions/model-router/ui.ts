@@ -82,13 +82,15 @@ export const updateStatus = (
     ? ` / $${currentConfig.maxSessionBudget.toFixed(2)}`
     : "";
 
+  const modelLine = routerEnabled
+    ? `Model: ${modelLabel}`
+    : `Model: ${lastNonRouterModel ?? "—"}`;
+
   const widgetText = [
-    `Router: ${routerEnabled ? `${selectedProfile ?? "off"} ${tierColor(currentTier ?? "low")}` : "off"}`,
-    `Model: ${routerEnabled ? modelLabel : (lastNonRouterModel ?? "—")}`,
+    `Router: ${routerEnabled ? `${selectedProfile ?? "off"} ${tierColor(currentTier ?? "low")}` : "off"}  ${modelLine}  ${costLabel}${budgetLabel}`,
     ...(routerEnabled && lastDecision?.reasoning
-      ? [`Reason: ${lastDecision.reasoning}`]
+      ? [lastDecision.reasoning]
       : []),
-    `Cost: ${costLabel}${budgetLabel}`,
   ];
 
   ctx.ui.setWidget("model-router", widgetText);
