@@ -1,0 +1,17 @@
+hs-plan-html server listening on http://127.0.0.1:50248/?t=<token>
+feedback file: /Users/lucascaro/checkout/pi-devkit/.plans/model-router-audit.feedback.json
+[19/Jun/2026 01:41:14] "GET /?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:41:14] "GET /feedback?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:41:14] "GET /favicon.ico HTTP/1.1" 403 -
+[feedback] saved 0 sections to /Users/lucascaro/checkout/pi-devkit/.plans/model-router-audit.feedback.json
+[19/Jun/2026 01:42:54] "POST /save?t=<token> HTTP/1.1" 200 -
+[approve] plan approved at 2026-06-19T01:42:54 -> /Users/lucascaro/checkout/pi-devkit/.plans/model-router-audit.approved.json
+[19/Jun/2026 01:42:54] "POST /approve?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:45:38] "GET /favicon.ico HTTP/1.1" 403 -
+[feedback] saved 0 sections to /Users/lucascaro/checkout/pi-devkit/.plans/model-router-audit.feedback.json
+[19/Jun/2026 01:46:32] "POST /save?t=<token> HTTP/1.1" 200 -
+[approve] plan approved at 2026-06-19T01:46:32 -> /Users/lucascaro/checkout/pi-devkit/.plans/model-router-audit.approved.json
+[19/Jun/2026 01:46:32] "POST /approve?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:46:32] "GET /?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:46:32] "GET /feedback?t=<token> HTTP/1.1" 200 -
+[19/Jun/2026 01:46:32] "GET /favicon.ico HTTP/1.1" 403 -

@@ -1,0 +1,67 @@
+{
+  "title": "Model Router Extension \u2014 Audit & Fix Plan",
+  "lede": "<p>Comprehensive code audit of the model-router extension found 14 issues across 3 severity tiers. This plan addresses the 10 actionable fixes, prioritized by risk, with test coverage gaps identified for follow-up.</p>",
+  "toc": [
+    {
+      "id": "summary",
+      "label": "Findings Summary"
+    },
+    {
+      "id": "critical",
+      "label": "Critical / High Fixes"
+    },
+    {
+      "id": "medium",
+      "label": "Medium Fixes"
+    },
+    {
+      "id": "low",
+      "label": "Low / Code Quality"
+    },
+    {
+      "id": "tests",
+      "label": "Test Coverage Gaps"
+    },
+    {
+      "id": "order",
+      "label": "Implementation Order"
+    }
+  ],
+  "sections": [
+    {
+      "id": "summary",
+      "heading": "Findings Summary",
+      "html": "<table class=\"table\">\n<thead><tr><th>#</th><th>Issue</th><th>Severity</th><th>Effort</th><th>File</th></tr></thead>\n<tbody>\n<tr><td>1</td><td>Budget check bypassed when tier pinned</td><td><span class=\"pill bad\">Critical</span></td><td>Small</td><td><code>routing.ts</code></td></tr>\n<tr><td>2</td><td><code>wordCount</code> shadowing in <code>decideRouting</code></td><td><span class=\"pill warn\">High</span></td><td>Trivial</td><td><code>routing.ts</code></td></tr>\n<tr><td>3</td><td><code>resolveAvailableTier</code> returns non-existent tier</td><td><span class=\"pill warn\">High</span></td><td>Small</td><td><code>routing.ts</code></td></tr>\n<tr><td>4</td><td><code>getThinkingOverride</code> returns <code>any</code></td><td><span class=\"pill warn\">Medium</span></td><td>Trivial</td><td><code>provider.ts</code></td></tr>\n<tr><td>5</td><td><code>streamSimple</code> cast to <code>any</code></td><td><span class=\"pill warn\">Medium</span></td><td>Small</td><td><code>provider.ts</code></td></tr>\n<tr><td>6</td><td><code>handleFix</code> no tier validation</td><td><span class=\"pill warn\">Medium</span></td><td>Trivial</td><td><code>commands.ts</code></td></tr>\n<tr><td>7</td><td><code>handleDisable</code> router-model loop</td><td><span class=\"pill warn\">Medium</span></td><td>Trivial</td><td><code>commands.ts</code></td></tr>\n<tr><td>8</td><td>Rough token estimation</td><td><span class=\"pill good\">Low</span></td><td>Doc</td><td><code>provider.ts</code></td></tr>\n<tr><td>9</td><td>Classifier truncation at 300 chars</td><td><span class=\"pill warn\">Medium</span></td><td>Medium</td><td><code>routing.ts</code></td></tr>\n<tr><td>10</td><td><code>persistState</code> dedup race</td><td><span class=\"pill good\">Low</span></td><td>Trivial</td><td><code>index.ts</code></td></tr>\n</tbody></table>"
+    },
+    {
+      "id": "critical",
+      "heading": "Critical / High Fixes",
+      "html": "<p>These three fixes address the most impactful issues. Fix #1 is the only one that could cause real financial harm.</p>\n<h3 id=\"fix-1\">Fix #1: Budget check bypassed when tier is pinned</h3>\n<p><strong>File:</strong> <code>extensions/model-router/routing.ts</code> \u2014 <code>decideRouting</code></p>\n<p><strong>Problem:</strong> The budget check is inside the <code>else</code> block of the <code>if (pinnedTier)</code> conditional. When a user pins \"high\" via <code>/router pin high</code>, the budget check is entirely skipped, allowing unbounded costs.</p>\n<p><strong>Approach:</strong> Move the budget check outside the <code>if/else</code> so it always applies regardless of pin state. The pinned tier should be respected, but the budget override should still be enforced as a safety cap.</p>\n<div class=\"changed\"><pre><code class=\"language-typescript\">// Current (broken):\nif (pinnedTier) {\n  tier = pinnedTier;\n} else {\n  // ... heuristics ...\n  if (isBudgetExceeded &amp;&amp; tier === \"high\") {\n    tier = \"medium\"; // budget check only in else\n  }\n}\n\n// Fixed:\nif (pinnedTier) {\n  tier = pinnedTier;\n} else {\n  // ... heuristics ...\n}\n// Budget check always applies:\nif (isBudgetExceeded &amp;&amp; tier === \"high\") {\n  tier = \"medium\";\n  phase = \"implementation\";\n  reasoning = `Budget exceeded. Downgraded from high to medium tier. (Original: ${reasoning})`;\n  isBudgetForced = true;\n}</code></pre></div>\n<h3 id=\"fix-2\">Fix #2: Remove <code>wordCount</code> shadowing</h3>\n<p><strong>File:</strong> <code>extensions/model-router/routing.ts</code> \u2014 <code>decideRouting</code></p>\n<p><strong>Problem:</strong> <code>const wordCount</code> is declared at the top of the function, then redeclared inside the <code>if (rules &amp;&amp; wordCount &lt; 100)</code> block. The inner declaration shadows the outer one and is redundant.</p>\n<p><strong>Approach:</strong> Remove the inner <code>const wordCount = countWords(prompt)</code> \u2014 the outer one is already computed and used in the condition.</p>\n<h3 id=\"fix-3\">Fix #3: <code>resolveAvailableTier</code> returns non-existent tier</h3>\n<p><strong>File:</strong> <code>extensions/model-router/routing.ts</code> \u2014 <code>resolveAvailableTier</code></p>\n<p><strong>Problem:</strong> When no tier exists in the profile, the function returns the preferred tier anyway. This causes <code>buildRoutingDecision</code> to throw.</p>\n<p><strong>Approach:</strong> Return <code>undefined</code> when no tier is available, and handle the <code>undefined</code> case in <code>decideRouting</code> by falling back to a default tier with a warning.</p>"
+    },
+    {
+      "id": "medium",
+      "heading": "Medium Fixes",
+      "html": "<h3 id=\"fix-4\">Fix #4: <code>getThinkingOverride</code> return type</h3>\n<p><strong>File:</strong> <code>extensions/model-router/provider.ts</code></p>\n<p><strong>Approach:</strong> Change the return type from <code>any</code> to <code>ThinkingLevel | undefined</code>.</p>\n<h3 id=\"fix-5\">Fix #5: Remove <code>as any</code> from provider registration</h3>\n<p><strong>File:</strong> <code>extensions/model-router/provider.ts</code></p>\n<p><strong>Approach:</strong> Properly type the <code>streamSimple</code> method signature using the types from <code>@earendil-works/pi-ai</code>. This may require importing the correct types and ensuring the implementation matches the interface.</p>\n<h3 id=\"fix-6\">Fix #6: <code>handleFix</code> tier validation</h3>\n<p><strong>File:</strong> <code>extensions/model-router/commands.ts</code> \u2014 <code>handleFix</code></p>\n<p><strong>Approach:</strong> Before pinning, check that the profile actually has the specified tier configured. If not, show a warning and skip the pin.</p>\n<h3 id=\"fix-7\">Fix #7: <code>handleDisable</code> router-model guard</h3>\n<p><strong>File:</strong> <code>extensions/model-router/commands.ts</code> \u2014 <code>handleDisable</code></p>\n<p><strong>Approach:</strong> After parsing <code>state.lastNonRouterModel</code>, check that the provider is not \"router\". If it is, show a warning and suggest using <code>/model</code> directly.</p>\n<h3 id=\"fix-9\">Fix #9: Classifier prompt truncation</h3>\n<p><strong>File:</strong> <code>extensions/model-router/routing.ts</code> \u2014 <code>runClassifier</code></p>\n<p><strong>Approach:</strong> Instead of truncating the first 300 chars, keep the last 300 chars (where the actual task intent is more likely to be). Alternatively, use a smarter strategy: extract the last user message and use that as the primary context, with recent conversation as secondary context.</p>"
+    },
+    {
+      "id": "low",
+      "heading": "Low / Code Quality",
+      "html": "<h3 id=\"fix-8\">Fix #8: Token estimation documentation</h3>\n<p><strong>File:</strong> <code>extensions/model-router/provider.ts</code> \u2014 <code>estimateTokens</code></p>\n<p><strong>Approach:</strong> Add a <code>/** Rough estimate \u2014 not accurate for code-heavy prompts */</code> comment explaining that the 33% ratio is a heuristic.</p>\n<h3 id=\"fix-10\">Fix #10: <code>persistState</code> in-flight guard</h3>\n<p><strong>File:</strong> <code>extensions/model-router/index.ts</code> \u2014 <code>persistState</code></p>\n<p><strong>Approach:</strong> Add a boolean flag <code>isPersisting</code> that is set to <code>true</code> before <code>pi.appendEntry</code> and reset in a <code>finally</code> block. Skip the write if already in-flight.</p>\n<h3>Additional code quality items</h3>\n<ul>\n<li><strong>Fix #11:</strong> Make <code>handleDebug</code> toggle explicit with <code>cmd === \"toggle\"</code></li>\n<li><strong>Fix #12:</strong> Extract magic constants in <code>decideRouting</code> to named constants with doc comments</li>\n<li><strong>Fix #13:</strong> Pre-compile keyword regexes in <code>containsAny</code> for performance</li>\n</ul>"
+    },
+    {
+      "id": "tests",
+      "heading": "Test Coverage Gaps",
+      "html": "<p>The existing 48 tests cover <code>config.ts</code> and <code>routing.ts</code> core logic well, but miss significant areas:</p>\n<ul>\n<li><strong><code>loadRouterConfig</code></strong> \u2014 full config loading pipeline (global + project merge, normalization)</li>\n<li><strong><code>normalizeTierConfig</code></strong> \u2014 model aliases, fallbacks, reasoning, thinking levels</li>\n<li><strong><code>normalizeModelsMap</code></strong> \u2014 edge cases (missing model field, invalid contextWindow, etc.)</li>\n<li><strong><code>resolveContextWindow</code> / <code>resolveMaxOutputTokens</code></strong> \u2014 registry lookup fallback</li>\n<li><strong><code>hasImageAttachment</code></strong> \u2014 content part detection</li>\n<li><strong><code>getRecentConversationText</code></strong> \u2014 message slicing and filtering</li>\n<li><strong><code>countToolResults</code></strong> \u2014 role-based filtering</li>\n<li><strong>Extension lifecycle</strong> (<code>index.ts</code>) \u2014 session start, model select, turn end</li>\n<li><strong>Provider registration</strong> (<code>provider.ts</code>) \u2014 stream handling, fallback chains</li>\n<li><strong>Command handlers</strong> (<code>commands.ts</code>) \u2014 all subcommand paths</li>\n<li><strong>Status widget</strong> (<code>ui.ts</code>) \u2014 rendering edge cases</li>\n</ul>\n<p><strong>Recommendation:</strong> Add integration-style tests for the provider and command layers using mocked <code>ExtensionContext</code> and <code>ExtensionAPI</code>.</p>"
+    },
+    {
+      "id": "order",
+      "heading": "Implementation Order",
+      "html": "<p>Recommended order to minimize risk and maximize impact:</p>\n<ol>\n<li><strong>Fix #1 (budget bypass)</strong> \u2014 highest risk, smallest change</li>\n<li><strong>Fix #2 (wordCount shadowing)</strong> \u2014 trivial, cleans up confusion</li>\n<li><strong>Fix #3 (resolveAvailableTier)</strong> \u2014 prevents potential crash</li>\n<li><strong>Fix #6 (handleFix validation)</strong> \u2014 trivial, improves UX</li>\n<li><strong>Fix #7 (handleDisable guard)</strong> \u2014 trivial, prevents loop</li>\n<li><strong>Fix #10 (persistState guard)</strong> \u2014 trivial, improves robustness</li>\n<li><strong>Fix #4 (getThinkingOverride type)</strong> \u2014 type safety improvement</li>\n<li><strong>Fix #5 (provider typing)</strong> \u2014 type safety improvement</li>\n<li><strong>Fix #8 (token estimation docs)</strong> \u2014 documentation only</li>\n<li><strong>Fix #9 (classifier truncation)</strong> \u2014 medium effort, design decision</li>\n<li><strong>Fix #11-13</strong> \u2014 code quality, can be done in batch</li>\n<li><strong>Add missing tests</strong> \u2014 separate PR or batch after fixes land</li>\n</ol>"
+    }
+  ],
+  "global_feedback": {
+    "slug": "global",
+    "label": "feedback \u2014 global / open questions",
+    "placeholder": "Any open questions, concerns, or suggestions about this plan?"
+  }
+}
