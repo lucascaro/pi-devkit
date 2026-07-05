@@ -411,8 +411,8 @@ describe("containsAnyCached", () => {
   });
 
   it("matches explicit low hints", () => {
-    expect(containsAnyCached("fast quick answer", "explicitLowHints")).toBe(true);
     expect(containsAnyCached("one line summary", "explicitLowHints")).toBe(true);
+    expect(containsAnyCached("briefly explain", "explicitLowHints")).toBe(true);
     expect(containsAnyCached("hello world", "explicitLowHints")).toBe(false);
   });
 

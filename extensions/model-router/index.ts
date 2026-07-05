@@ -25,6 +25,7 @@ import { isRouterPersistedState, buildPersistedState } from "./state.js";
 import { updateStatus, formatModelRef } from "./ui.js";
 import { registerCommands } from "./commands.js";
 import { registerRouterProvider } from "./provider.js";
+import { loadWidgetState, saveWidgetState } from "./persistence.js";
 
 const _routerExtensionMeta = {
   description: "Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles",
@@ -130,6 +131,9 @@ const routerExtension = (pi: ExtensionAPI) => {
       }
       pi.appendEntry("router-state", state);
       lastPersistedSnapshot = snapshot;
+
+      // Also persist widget state to file for cross-session survival
+      saveWidgetState({ widgetEnabled });
     } finally {
       isPersisting = false;
     }
@@ -322,7 +326,6 @@ const routerExtension = (pi: ExtensionAPI) => {
     for (const key of Object.keys(thinkingByProfile)) {
       delete thinkingByProfile[key];
     }
-    widgetEnabled = false;
     debugHistory = [];
     accumulatedCost = 0;
     lastNonRouterModel =
@@ -331,6 +334,11 @@ const routerExtension = (pi: ExtensionAPI) => {
         : lastNonRouterModel;
     lastDecision = undefined;
 
+    // Restore widget state from file (persists across /new)
+    const widgetState = loadWidgetState();
+    widgetEnabled = widgetState.widgetEnabled;
+
+    // Restore other router state from session entries (same session only)
     const entries = ctx.sessionManager.getBranch() as CustomSessionEntry[];
     const routerEntries = entries.filter(
       (entry) =>
@@ -369,8 +377,6 @@ const routerExtension = (pi: ExtensionAPI) => {
       }
       debugEnabled =
         savedState.debugEnabled ?? debugEnabled;
-      widgetEnabled =
-        savedState.widgetEnabled ?? widgetEnabled;
       debugHistory = savedState.debugHistory
         ? [...savedState.debugHistory].slice(-MAX_DEBUG_HISTORY)
         : [];
@@ -570,6 +576,47 @@ const routerExtension = (pi: ExtensionAPI) => {
         }
       }
     }
+  });
+
+  // /recap command — simple prompt to the classifier model
+  pi.registerCommand("recap", {
+    description: "Summarize the current session",
+    handler: async (_args, ctx) => {
+      const classifierModelRef = currentConfig.classifierModel;
+      if (!classifierModelRef) {
+        ctx.ui.notify("Recap: no classifierModel configured in model-router.json", "warning");
+        return;
+      }
+
+      const ref = typeof classifierModelRef === "string" ? classifierModelRef : (classifierModelRef as any).model;
+      if (!ref) return;
+
+      const slashIdx = ref.indexOf("/");
+      if (slashIdx === -1) return;
+      const provider = ref.slice(0, slashIdx);
+      const modelId = ref.slice(slashIdx + 1);
+      const model = ctx.modelRegistry.find(provider, modelId);
+      if (!model) return;
+
+      const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+      if (!auth.ok || !auth.apiKey) return;
+
+      const { streamSimple } = await import("@earendil-works/pi-ai");
+      const prompt = `Summarize this coding session in 3-5 bullet points. What were we working on? What got done? Where did we leave off?`;
+
+      let fullText = "";
+      for await (const event of streamSimple(model, {
+        messages: [{ role: "user" as const, content: prompt, timestamp: Date.now() }],
+      }, { apiKey: auth.apiKey })) {
+        if (event.type === "text_delta" && typeof (event as any).delta === "string") {
+          fullText += (event as any).delta;
+        }
+      }
+
+      if (fullText.trim()) {
+        ctx.ui.notify(`\n📝 Recap:\n${fullText.trim()}`, "info");
+      }
+    },
   });
 };
 

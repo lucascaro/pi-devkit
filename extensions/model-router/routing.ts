@@ -121,24 +121,17 @@ const getKeywordsForList = (keywordListName: string): string[] => {
       ];
     case "explicitLowHints":
       return [
-        "fast",
-        "cheap",
-        "quick",
-        "quickly",
         "brief",
         "briefly",
         "one sentence",
         "one line",
         "tiny",
-        "small",
       ];
     case "summaryKeywords":
       return [
         "summarize",
         "summary",
         "changelog",
-        "rewrite",
-        "reformat",
         "format",
         "rename",
         "explain briefly",
@@ -293,16 +286,11 @@ export const decideRouting = (
     "ultrathink",
   ];
   const explicitLowHints = [
-    "fast",
-    "cheap",
-    "quick",
-    "quickly",
     "brief",
     "briefly",
     "one sentence",
     "one line",
     "tiny",
-    "small",
   ];
   const planningKeywords = [
     "plan",
@@ -327,8 +315,6 @@ export const decideRouting = (
     "summarize",
     "summary",
     "changelog",
-    "rewrite",
-    "reformat",
     "format",
     "rename",
     "explain briefly",
@@ -419,10 +405,10 @@ export const decideRouting = (
       // lowThreshold: words below which we consider it a short/bounded request (default ~8).
       const HIGH_WORD_THRESHOLD_BASE = 120;
       const HIGH_PHASE_BIAS_SCALE = 80;
-      const LOW_WORD_THRESHOLD_BASE = 12;
+      const LOW_WORD_THRESHOLD_BASE = 16;
       const LOW_PHASE_BIAS_SCALE = 8;
       const HIGH_WORD_THRESHOLD_MIN = 40;
-      const LOW_WORD_THRESHOLD_MIN = 4;
+      const LOW_WORD_THRESHOLD_MIN = 6;
 
       const highThreshold = Math.max(
         HIGH_WORD_THRESHOLD_MIN,
@@ -448,11 +434,6 @@ export const decideRouting = (
         tier = "low";
         reasoning =
           "Detected an explicit request for a faster or lighter response.";
-      } else if (containsAnyCached(prompt, "summaryKeywords")) {
-        phase = "lightweight";
-        tier = "low";
-        reasoning =
-          "Detected summary or lightweight transformation keywords.";
       } else if (
         containsAnyCached(prompt, "planningKeywords") ||
         prompt.startsWith("why ") ||
@@ -470,6 +451,11 @@ export const decideRouting = (
         tier = "medium";
         reasoning =
           "Detected implementation-oriented work with bounded execution scope.";
+      } else if (containsAnyCached(prompt, "summaryKeywords")) {
+        phase = "lightweight";
+        tier = "low";
+        reasoning =
+          "Detected summary or lightweight transformation keywords.";
       } else if (
         containsAnyCached(prompt, "lookupKeywords") &&
         wordCount <= 24 &&
