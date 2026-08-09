@@ -267,12 +267,20 @@ export const registerRouterProvider = (
             isBudgetExceeded,
           );
 
+          // Check classifier: profile-level false disables it entirely;
+          // otherwise prefer profile classifier, fall back to global.
+          let classifierCfg = undefined;
+          const profileClassifier = profile.classifierModel;
+          if (profileClassifier !== false) {
+            classifierCfg =
+              profileClassifier ?? state.currentConfig.classifierModel;
+          }
+
           if (
-            state.currentConfig.classifierModel &&
+            classifierCfg &&
             !pinnedTier &&
             !decision.isRuleMatched
           ) {
-            const classifierCfg = state.currentConfig.classifierModel;
             const classifierModelRef = typeof classifierCfg === "string" ? classifierCfg : classifierCfg.model;
             const classifierThinking = typeof classifierCfg === "object" ? classifierCfg.thinking : undefined;
             const classifierResult = await runClassifier(

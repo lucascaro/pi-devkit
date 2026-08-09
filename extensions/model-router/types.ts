@@ -39,10 +39,17 @@ export interface RoutedTierConfig {
   resolvedThinkingLevels?: ThinkingLevel[] | undefined;
 }
 
+export interface ProfileClassifierConfig {
+  model: string;
+  thinking?: ThinkingLevel | undefined;
+}
+
 export interface RouterProfile {
   high?: RoutedTierConfig | undefined;
   medium?: RoutedTierConfig | undefined;
   low?: RoutedTierConfig | undefined;
+  /** Override classifier for this profile. Set to false to disable classification entirely. */
+  classifierModel?: false | string | ProfileClassifierConfig | undefined;
 }
 
 export interface RouterConfig {
@@ -93,6 +100,7 @@ export interface ConfigLoadResult {
   config: RouterConfig;
   warnings: string[];
   configPath?: string;
+  profileClassifiers?: Record<string, ClassifierConfig | undefined>;
 }
 
 export interface ParsedConfigFile {

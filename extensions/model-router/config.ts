@@ -12,6 +12,7 @@ import type {
   RoutingRule,
   ModelDefinition,
   ClassifierConfig,
+  ProfileClassifierConfig,
 } from "./types.js";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
@@ -71,6 +72,10 @@ export const mergeConfig = (
       high: mergeTier(existing?.high, nextProfile.high),
       medium: mergeTier(existing?.medium, nextProfile.medium),
       low: mergeTier(existing?.low, nextProfile.low),
+      classifierModel:
+        nextProfile.classifierModel !== undefined
+          ? nextProfile.classifierModel
+          : existing?.classifierModel,
     };
   }
 
@@ -391,50 +396,24 @@ export const normalizeConfig = (raw: RouterConfig): ConfigLoadResult => {
     }
   }
 
-  let classifierModel: ClassifierConfig | undefined;
-  const rawClassifier = raw.classifierModel as unknown;
-  if (typeof rawClassifier === "string" && rawClassifier.trim()) {
-    const resolved = resolveModelRef(
-      rawClassifier.trim(),
+  const classifierModel = normalizeClassifier(
+    raw.classifierModel,
+    hasModels ? normalizedModels : undefined,
+    warnings,
+  );
+
+  const profileClassifiers: Record<string, ClassifierConfig | undefined> = {};
+  for (const [name, profile] of Object.entries(
+    raw.profiles ?? {},
+  )) {
+    const typedProfile = profile as RouterProfile | undefined;
+    const pc = normalizeClassifier(
+      typedProfile?.classifierModel,
       hasModels ? normalizedModels : undefined,
+      warnings,
+      name,
     );
-    try {
-      parseCanonicalModelRef(resolved.canonicalRef);
-      classifierModel = { model: resolved.canonicalRef };
-    } catch (error) {
-      warnings.push(
-        `Invalid classifierModel: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  } else if (isObjectRecord(rawClassifier)) {
-    const modelRef =
-      typeof rawClassifier.model === "string" ? rawClassifier.model.trim() : "";
-    if (modelRef) {
-      const resolved = resolveModelRef(
-        modelRef,
-        hasModels ? normalizedModels : undefined,
-      );
-      try {
-        parseCanonicalModelRef(resolved.canonicalRef);
-        const thinking = isThinkingLevel(rawClassifier.thinking)
-          ? rawClassifier.thinking
-          : undefined;
-        if (rawClassifier.thinking !== undefined && !thinking) {
-          warnings.push(
-            `classifierModel has invalid thinking level "${String(rawClassifier.thinking)}". Ignored.`,
-          );
-        }
-        classifierModel = { model: resolved.canonicalRef, thinking };
-      } catch (error) {
-        warnings.push(
-          `Invalid classifierModel: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    } else {
-      warnings.push(
-        'classifierModel object is missing the "model" field. Ignored.',
-      );
-    }
+    profileClassifiers[name] = pc;
   }
 
   return {
@@ -448,7 +427,55 @@ export const normalizeConfig = (raw: RouterConfig): ConfigLoadResult => {
       models: hasModels ? normalizedModels : undefined,
     },
     warnings,
+    profileClassifiers,
   };
+};
+
+export const normalizeClassifier = (
+  raw: unknown,
+  models: Record<string, ModelDefinition> | undefined,
+  warnings: string[],
+  contextLabel?: string,
+): ClassifierConfig | undefined => {
+  // false explicitly disables classification
+  if (raw === false) return undefined;
+
+  const resolveClassifierRef = (
+    ref: string,
+  ): { canonicalRef: string; definition?: ModelDefinition } => {
+    const resolved = resolveModelRef(ref, models);
+    // If it has a provider/modelId format, validate it
+    if (resolved.canonicalRef.includes("/")) {
+      parseCanonicalModelRef(resolved.canonicalRef);
+    }
+    // If it's a bare alias (no slash), just use it as-is
+    return resolved;
+  };
+
+  if (typeof raw === "string" && raw.trim()) {
+    const resolved = resolveClassifierRef(raw.trim());
+    return { model: resolved.canonicalRef };
+  } else if (isObjectRecord(raw)) {
+    const modelRef =
+      typeof (raw as any).model === "string" ? (raw as any).model.trim() : "";
+    if (modelRef) {
+      const resolved = resolveClassifierRef(modelRef);
+      const thinking = isThinkingLevel((raw as any).thinking)
+        ? (raw as any).thinking
+        : undefined;
+      if ((raw as any).thinking !== undefined && !thinking) {
+        warnings.push(
+          `${contextLabel ? `Profile "${contextLabel}" ` : ""}classifierModel has invalid thinking level "${String((raw as any).thinking)}". Ignored.`,
+        );
+      }
+      return { model: resolved.canonicalRef, thinking };
+    } else {
+      warnings.push(
+        `${contextLabel ? `Profile "${contextLabel}" ` : ""}classifierModel object is missing the "model" field. Ignored.`,
+      );
+    }
+  }
+  return undefined;
 };
 
 export const loadRouterConfig = (cwd: string): ConfigLoadResult => {
@@ -489,6 +516,7 @@ export const loadRouterConfig = (cwd: string): ConfigLoadResult => {
   const result: ConfigLoadResult = {
     config: normalized.config,
     warnings,
+    profileClassifiers: normalized.profileClassifiers ?? {},
   };
   if (configPath !== undefined) {
     result.configPath = configPath;
