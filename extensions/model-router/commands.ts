@@ -301,7 +301,10 @@ export const registerCommands = (
       lines.push(
         `Last routed tier: ${state.lastDecision.tier}`,
         `Last phase: ${state.lastDecision.phase}`,
-        `Last model: ${state.lastDecision.targetProvider}/${state.lastDecision.targetModelId} (${state.lastDecision.thinking})`,
+        `Last requested model: ${state.lastDecision.targetProvider}/${state.lastDecision.targetModelId} (${state.lastDecision.thinking})`,
+        ...(state.lastDecision.responseModelId
+          ? [`Last actual model: ${state.lastDecision.responseModelId}`]
+          : []),
         `Reason: ${state.lastDecision.reasoning}`,
       );
     }

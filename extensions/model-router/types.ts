@@ -62,6 +62,8 @@ export interface RoutingDecision {
   targetProvider: string;
   targetModelId: string;
   targetLabel: string;
+  /** Model reported by the upstream API, e.g. OpenRouter's concrete choice for `auto`. */
+  responseModelId?: string | undefined;
   reasoning: string;
   thinking: ThinkingLevel;
   timestamp: number;

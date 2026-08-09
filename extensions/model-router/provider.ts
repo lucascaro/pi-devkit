@@ -1,4 +1,5 @@
 import {
+  calculateCost,
   createAssistantMessageEventStream,
   streamSimple,
   type Api,
@@ -514,9 +515,23 @@ export const registerRouterProvider = (
               let contentReceived = false;
               for await (const event of delegatedStream) {
                 if (event.type === "done") {
-                  const cost =
-                    event.message.usage?.cost?.total ?? 0;
+                  const responseModelId = event.message.responseModel;
+                  if (responseModelId) {
+                    decision.responseModelId = responseModelId;
+                    state.lastDecision = decision;
+                    const responseModel = state.currentModelRegistry.find(
+                      targetProvider,
+                      responseModelId,
+                    );
+                    if (responseModel) {
+                      calculateCost(responseModel, event.message.usage);
+                    }
+                  }
+                  const cost = event.message.usage?.cost?.total ?? 0;
                   state.accumulatedCost += cost;
+                  if (state.lastExtensionContext) {
+                    actions.updateStatus(state.lastExtensionContext);
+                  }
                 }
                 if (event.type === "error" && !contentReceived) {
                   throw new Error(

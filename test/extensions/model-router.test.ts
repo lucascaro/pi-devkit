@@ -31,6 +31,7 @@ import {
   isRouterPersistedState,
   buildPersistedState,
 } from "../../extensions/model-router/state.js";
+import { formatDecision } from "../../extensions/model-router/ui.js";
 import type {
   RouterConfig,
   RouterProfile,
@@ -648,6 +649,27 @@ describe("buildRoutingDecision", () => {
     expect(decision.targetModelId).toBe("gpt-5.4");
     expect(decision.thinking).toBe("high");
     expect(decision.reasoning).toBe("Test reasoning");
+  });
+});
+
+describe("formatDecision", () => {
+  it("shows the upstream response model when it differs from the requested alias", () => {
+    const decision: RoutingDecision = {
+      profile: "auto",
+      tier: "high",
+      phase: "planning",
+      targetProvider: "openrouter",
+      targetModelId: "auto",
+      targetLabel: "openrouter/auto",
+      responseModelId: "anthropic/claude-sonnet-4.6",
+      reasoning: "Test routing",
+      thinking: "high",
+      timestamp: Date.now(),
+    };
+
+    expect(formatDecision(decision)).toContain(
+      "openrouter/auto → anthropic/claude-sonnet-4.6",
+    );
   });
 });
 

@@ -38,7 +38,10 @@ export const formatThinkingSummary = (
 };
 
 export const formatDecision = (decision: RoutingDecision): string => {
-  return `[${decision.tier}] ${decision.targetProvider}/${decision.targetModelId} (${decision.thinking}) — ${decision.reasoning}`;
+  const actualModel = decision.responseModelId
+    ? ` → ${decision.responseModelId}`
+    : "";
+  return `[${decision.tier}] ${decision.targetProvider}/${decision.targetModelId}${actualModel} (${decision.thinking}) — ${decision.reasoning}`;
 };
 
 const tierColor = (tier: string): string => {
@@ -75,7 +78,9 @@ export const updateStatus = (
   const currentTier = lastDecision?.tier;
   const tierLabel = currentTier ? `[${currentTier}]` : "";
   const modelLabel = lastDecision
-    ? `${lastDecision.targetProvider}/${lastDecision.targetModelId}`
+    ? lastDecision.responseModelId
+      ? `${lastDecision.targetProvider}/${lastDecision.targetModelId} → ${lastDecision.responseModelId}`
+      : `${lastDecision.targetProvider}/${lastDecision.targetModelId}`
     : "—";
   const costLabel = `$${accumulatedCost.toFixed(4)}`;
   const budgetLabel = currentConfig.maxSessionBudget

@@ -34,6 +34,7 @@ Project config overrides global config.
 - **Task-Aware Heuristics**: Detects planning vs. implementation vs. lightweight tasks using keyword analysis, word count, and conversation history.
 - **LLM Classifier**: Optionally uses a fast, cheap model to categorize intent (overrides heuristics).
 - **Advanced Controls**: Custom rules, cost budgeting, fallback chains, phase memory, and thinking level overrides.
+- **Upstream Model Visibility**: For aliases such as `openrouter/auto`, the widget, `/router status`, and debug history show the concrete model reported by the provider after each response.
 
 ## Installation
 
