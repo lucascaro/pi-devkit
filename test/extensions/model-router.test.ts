@@ -6,6 +6,7 @@ import {
   parseConfigFile,
   mergeConfig,
   normalizeConfig,
+  normalizeClassifier,
   parseCanonicalModelRef,
   normalizeTierConfig,
   normalizeModelsMap,
@@ -31,6 +32,7 @@ import {
   isRouterPersistedState,
   buildPersistedState,
 } from "../../extensions/model-router/state.js";
+import { formatDecision } from "../../extensions/model-router/ui.js";
 import type {
   RouterConfig,
   RouterProfile,
@@ -648,6 +650,116 @@ describe("buildRoutingDecision", () => {
     expect(decision.targetModelId).toBe("gpt-5.4");
     expect(decision.thinking).toBe("high");
     expect(decision.reasoning).toBe("Test reasoning");
+  });
+});
+
+describe("normalizeClassifier", () => {
+  it("returns undefined for false (explicitly disabled)", () => {
+    expect(normalizeClassifier(false, undefined, [])).toBeUndefined();
+  });
+
+  it("returns undefined for undefined", () => {
+    expect(normalizeClassifier(undefined, undefined, [])).toBeUndefined();
+  });
+
+  it("accepts a bare model alias as-is", () => {
+    const result = normalizeClassifier("qwen3-4b-mlx-4bit", undefined, []);
+    expect(result).toEqual({ model: "qwen3-4b-mlx-4bit" });
+  });
+
+  it("resolves a provider/modelId ref", () => {
+    const result = normalizeClassifier(
+      "omlx/Qwen3-4B-Instruct-MLX-4bit",
+      undefined,
+      [],
+    );
+    expect(result).toEqual({ model: "omlx/Qwen3-4B-Instruct-MLX-4bit" });
+  });
+
+  it("resolves a model alias when models map is provided", () => {
+    const models = {
+      "qwen3-4b-mlx-4bit": {
+        model: "omlx/Qwen3-4B-Instruct-MLX-4bit",
+      },
+    } as any;
+    const result = normalizeClassifier("qwen3-4b-mlx-4bit", models, []);
+    expect(result).toEqual({ model: "omlx/Qwen3-4B-Instruct-MLX-4bit" });
+  });
+
+  it("resolves an object classifier config", () => {
+    const result = normalizeClassifier(
+      { model: "qwen3-4b-mlx-4bit", thinking: "high" },
+      undefined,
+      [],
+    );
+    expect(result).toEqual({
+      model: "qwen3-4b-mlx-4bit",
+      thinking: "high",
+    });
+  });
+
+  it("includes context label in warning for missing model field", () => {
+    const warnings: string[] = [];
+    normalizeClassifier(
+      { thinking: "high" } as any, // missing model field
+      undefined,
+      warnings,
+      "test-profile",
+    );
+    expect(warnings[0]).toContain("Profile \"test-profile\"");
+  });
+});
+
+describe("mergeConfig profile classifier", () => {
+  it("preserves profile-level classifier when override omits it", () => {
+    const base = {
+      profiles: {
+        balanced: { classifierModel: false, high: { model: "gpt-pro" } },
+      },
+    } as any;
+    const override = {
+      profiles: {
+        balanced: { high: { model: "sonnet" } },
+      },
+    } as any;
+    const merged = mergeConfig(base, override);
+    expect(merged.profiles.balanced?.classifierModel).toBe(false);
+  });
+
+  it("overrides profile-level classifier with profile-level value", () => {
+    const base = {
+      profiles: {
+        balanced: { classifierModel: false, high: { model: "gpt-pro" } },
+      },
+    } as any;
+    const override = {
+      profiles: {
+        balanced: { classifierModel: "qwen3-4b-mlx-4bit", high: { model: "gpt-pro" } },
+      },
+    } as any;
+    const merged = mergeConfig(base, override);
+    expect(merged.profiles.balanced?.classifierModel).toBe("qwen3-4b-mlx-4bit");
+  });
+});
+
+describe("formatDecision", () => {
+  it("shows the upstream response model when it differs from the requested alias", () => {
+    const decision: RoutingDecision = {
+      profile: "auto",
+      tier: "high",
+      phase: "planning",
+      targetProvider: "openrouter",
+      targetModelId: "auto",
+      targetLabel: "openrouter/auto",
+      responseModelId: "anthropic/claude-sonnet-4.6",
+      reasoning: "Test routing",
+      thinking: "high",
+      timestamp: Date.now(),
+    };
+
+    expect(formatDecision(decision)).toContain(
+      "openrouter/auto → anthropic/claude-sonnet-4.6",
+    );
   });
 });
 

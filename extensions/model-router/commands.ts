@@ -291,6 +291,24 @@ export const registerCommands = (
           : ""),
       `Config file: ${state.lastConfigPath ?? "(none)"}`,
       `Available profiles: ${names}`,
+      `Global classifier: ${(() => {
+        const c = state.currentConfig.classifierModel;
+        if (!c) return "(none)";
+        return typeof c === "string" ? c : c.model;
+      })()}`,
+      ...(state.lastDecision && state.lastDecision.profile
+        ? [
+            `Profile classifier: ${(() => {
+              const p = state.currentConfig.profiles[state.lastDecision.profile];
+              if (!p) return "(unknown)";
+              const c = p.classifierModel;
+              if (c === false) return "disabled";
+              if (!c) return "(inherited from global)";
+              const m = typeof c === "string" ? c : (c as any).model;
+              return m;
+            })()}`,
+          ]
+        : []),
       `Last non-router model: ${formatModelRef(
         state.lastNonRouterModel,
       )}`,
@@ -301,7 +319,10 @@ export const registerCommands = (
       lines.push(
         `Last routed tier: ${state.lastDecision.tier}`,
         `Last phase: ${state.lastDecision.phase}`,
-        `Last model: ${state.lastDecision.targetProvider}/${state.lastDecision.targetModelId} (${state.lastDecision.thinking})`,
+        `Last requested model: ${state.lastDecision.targetProvider}/${state.lastDecision.targetModelId} (${state.lastDecision.thinking})`,
+        ...(state.lastDecision.responseModelId
+          ? [`Last actual model: ${state.lastDecision.responseModelId}`]
+          : []),
         `Reason: ${state.lastDecision.reasoning}`,
       );
     }

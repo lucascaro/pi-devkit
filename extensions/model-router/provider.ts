@@ -1,4 +1,5 @@
 import {
+  calculateCost,
   createAssistantMessageEventStream,
   streamSimple,
   type Api,
@@ -266,12 +267,20 @@ export const registerRouterProvider = (
             isBudgetExceeded,
           );
 
+          // Check classifier: profile-level false disables it entirely;
+          // otherwise prefer profile classifier, fall back to global.
+          let classifierCfg = undefined;
+          const profileClassifier = profile.classifierModel;
+          if (profileClassifier !== false) {
+            classifierCfg =
+              profileClassifier ?? state.currentConfig.classifierModel;
+          }
+
           if (
-            state.currentConfig.classifierModel &&
+            classifierCfg &&
             !pinnedTier &&
             !decision.isRuleMatched
           ) {
-            const classifierCfg = state.currentConfig.classifierModel;
             const classifierModelRef = typeof classifierCfg === "string" ? classifierCfg : classifierCfg.model;
             const classifierThinking = typeof classifierCfg === "object" ? classifierCfg.thinking : undefined;
             const classifierResult = await runClassifier(
@@ -514,9 +523,23 @@ export const registerRouterProvider = (
               let contentReceived = false;
               for await (const event of delegatedStream) {
                 if (event.type === "done") {
-                  const cost =
-                    event.message.usage?.cost?.total ?? 0;
+                  const responseModelId = event.message.responseModel;
+                  if (responseModelId) {
+                    decision.responseModelId = responseModelId;
+                    state.lastDecision = decision;
+                    const responseModel = state.currentModelRegistry.find(
+                      targetProvider,
+                      responseModelId,
+                    );
+                    if (responseModel) {
+                      calculateCost(responseModel, event.message.usage);
+                    }
+                  }
+                  const cost = event.message.usage?.cost?.total ?? 0;
                   state.accumulatedCost += cost;
+                  if (state.lastExtensionContext) {
+                    actions.updateStatus(state.lastExtensionContext);
+                  }
                 }
                 if (event.type === "error" && !contentReceived) {
                   throw new Error(
