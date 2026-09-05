@@ -3,6 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import helloExtension from "../../extensions/hello/index.ts";
 import guardrailsExtension from "../../extensions/guardrails/index.ts";
 import inputBellExtension from "../../extensions/input-bell/index.ts";
+import askQuestionExtension from "../../extensions/ask-question/index.ts";
 
 function mockPi(): ExtensionAPI & { registerTool: ReturnType<typeof vi.fn>; registerCommand: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn> } {
   return {
@@ -33,5 +34,12 @@ describe("extension registration", () => {
     expect(pi.on).toHaveBeenCalledWith("agent_settled", expect.any(Function));
     expect(pi.on).toHaveBeenCalledWith("ui_prompt_start", expect.any(Function));
     expect(pi.registerCommand).toHaveBeenCalledWith("input-bell", expect.objectContaining({ description: expect.any(String) }));
+  });
+
+  it("registers the ask_question tool", () => {
+    const pi = mockPi();
+    askQuestionExtension(pi);
+    expect(pi.registerTool).toHaveBeenCalledTimes(1);
+    expect(pi.registerTool.mock.calls[0]?.[0]).toMatchObject({ name: "ask_question", label: "Ask Question" });
   });
 });
