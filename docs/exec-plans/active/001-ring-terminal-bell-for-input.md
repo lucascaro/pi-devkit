@@ -3,8 +3,8 @@
 - **Spec:** [docs/product-specs/001-ring-terminal-bell-for-input.md](../../product-specs/001-ring-terminal-bell-for-input.md)
 - **Issue:** — (local spec, no GitHub issue)
 - **Status:** active
-- **PR:** —
-- **Branch:** —
+- **PR:** #2
+- **Branch:** feature/001-ring-terminal-bell-for-input
 
 <!--
 Stage is **not** carried here. The spec's YAML frontmatter `stage:` is the
@@ -137,6 +137,7 @@ pi -e ./extensions/input-bell/index.ts
 
 - **2026-07-09** — Spec created (local, no GitHub issue), triaged as enhancement/S/P1.
 - **2026-07-09** — Implemented: extension, 10 behavioral tests, registration test, changeset, README/AGENTS/catalog updates, pi stack bump + model-router compat fixes. `npm run check` green (112 tests).
+- **2026-07-09** — Pushed `feature/001-ring-terminal-bell-for-input`, opened PR #2 (no GitHub issue — local spec).
 
 ## PR convergence ledger
 

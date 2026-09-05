@@ -1,5 +1,6 @@
 ---
 issue: 1
+pr: 2
 type: added
 bump: minor
 ---

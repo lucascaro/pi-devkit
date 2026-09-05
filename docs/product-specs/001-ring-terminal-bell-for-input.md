@@ -3,7 +3,8 @@ title: Ring terminal bell when input is needed
 type: enhancement
 complexity: S
 priority: P1
-stage: IMPLEMENT
+pr: 2
+stage: REVIEW
 ---
 
 # Ring terminal bell when input is needed
