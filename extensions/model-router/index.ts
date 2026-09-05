@@ -601,7 +601,7 @@ const routerExtension = (pi: ExtensionAPI) => {
       const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
       if (!auth.ok || !auth.apiKey) return;
 
-      const { streamSimple } = await import("@earendil-works/pi-ai");
+      const { streamSimple } = await import("@earendil-works/pi-ai/compat");
       const prompt = `Summarize this coding session in 3-5 bullet points. What were we working on? What got done? Where did we leave off?`;
 
       let fullText = "";

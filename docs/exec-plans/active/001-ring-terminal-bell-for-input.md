@@ -128,10 +128,15 @@ pi -e ./extensions/input-bell/index.ts
 
 - **2026-07-09** — Clarifying round A: ring on both `agent_settled` (idle) and `ui_prompt_start`; bell only, no visual cue; pi setting `inputBell` default-on with per-project override. Why: operator answers at plan intake.
 - **2026-07-09** — Plan approved via plan-html with empty feedback. Second opinion ran inline (no subagent tool in this runtime); disclosed in the plan.
+- **2026-07-09** — Bumped pi dev stack 0.79.6 → 0.85.0 (lockfile was stale; package.json already declared `latest`). Why: the feature requires `ui_prompt_start` (pi ≥ 0.84.4) and the stale lock made the new event types unavailable.
+- **2026-07-09** — Set peerDep floor `@earendil-works/pi-coding-agent: >=0.84.4`. Why: the extension imports `CONFIG_DIR_NAME` (≥0.79.7), uses `agent_settled` (≥0.80.4) and `ui_prompt_start` (≥0.84.4); older pi would fail at extension load.
+- **2026-07-09** — model-router: `streamSimple` now imported from `@earendil-works/pi-ai/compat` (no longer in the pi-ai main entry), and `"max"` added to `THINKING_LEVELS` (pi-agent-core 0.85 added `"max"` to `ThinkingLevel`). Why: the pi bump surfaced a latent break — a fresh `npm install` on the old lock would have failed typecheck regardless of this feature.
+- **2026-07-09** — Added `@earendil-works/pi-server` as a devDependency. Why: pi-coding-agent 0.85.0's library entry (`dist/index.js` → `main.js` → `experimental/server.js`) imports it but does not declare it; the bundled CLI never hits this. Upstream packaging bug — file an issue with earendil-works.
 
 ## Progress
 
 - **2026-07-09** — Spec created (local, no GitHub issue), triaged as enhancement/S/P1.
+- **2026-07-09** — Implemented: extension, 10 behavioral tests, registration test, changeset, README/AGENTS/catalog updates, pi stack bump + model-router compat fixes. `npm run check` green (112 tests).
 
 ## PR convergence ledger
 

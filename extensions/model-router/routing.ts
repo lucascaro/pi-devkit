@@ -1,4 +1,6 @@
-import { streamSimple, type Context, type Message } from "@earendil-works/pi-ai";
+import { type Context, type Message } from "@earendil-works/pi-ai";
+// streamSimple is no longer exported from the pi-ai main entry; the compat subpath keeps the legacy function (same behavior).
+import { streamSimple } from "@earendil-works/pi-ai/compat";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type {

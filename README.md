@@ -24,6 +24,7 @@ pi install ./
 
 - `extensions/hello` - minimal custom tool example.
 - `extensions/guardrails` - blocks high-risk bash commands unless confirmed.
+- `extensions/input-bell` - rings the terminal bell when pi needs your input (turn ended, dialog waiting); `inputBell` setting, default on.
 - `extensions/model-router` - intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles.
 - `skills/pi-package-author` - workflow for authoring Pi packages.
 - `prompts/review.md` - reusable review prompt.

@@ -10,6 +10,7 @@
 | anti-people-pleasing | `./extensions/anti-people-pleasing` | No description found. |
 | guardrails | `./extensions/guardrails` | Show pi-devkit guardrail status |
 | hello | `./extensions/hello` | Greet a person by name. Use for testing that pi-devkit custom tools are loaded. |
+| input-bell | `./extensions/input-bell` | Show input-bell status |
 | model-router | `./extensions/model-router` | Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles |
 
 ## Skills

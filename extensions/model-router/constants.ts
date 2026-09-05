@@ -9,6 +9,7 @@ export const THINKING_LEVELS = [
   "medium",
   "high",
   "xhigh",
+  "max",
 ] as const;
 export const ROUTER_PIN_VALUES = ["auto", "high", "medium", "low"] as const;
 export const DEFAULT_THINKING_LEVELS = ["high", "medium", "low"] as const;
