@@ -1,0 +1,8 @@
+[github]
+# Controls whether /hs-feature-new and /hs-feature-loop open a GitHub issue
+# when starting a feature. Behavior of each value:
+#   "opt-out" — create by default, confirm at Gate 1 (recommended)
+#   "always"  — create without asking; Gate 1 is skipped
+#   "opt-in"  — keep specs local by default; only create when asked
+#   "ask"     — no default; the operator chooses every time
+create_issues = "opt-in"
