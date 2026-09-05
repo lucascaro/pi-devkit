@@ -2,7 +2,7 @@
 
 - **Spec:** [docs/product-specs/001-ring-terminal-bell-for-input.md](../../product-specs/001-ring-terminal-bell-for-input.md)
 - **Issue:** — (local spec, no GitHub issue)
-- **Status:** active
+- **Status:** completed
 - **PR:** #2
 - **Branch:** feature/001-ring-terminal-bell-for-input
 
@@ -126,24 +126,29 @@ pi -e ./extensions/input-bell/index.ts
 
 ## Decision log
 
-- **2026-07-09** — Clarifying round A: ring on both `agent_settled` (idle) and `ui_prompt_start`; bell only, no visual cue; pi setting `inputBell` default-on with per-project override. Why: operator answers at plan intake.
-- **2026-07-09** — Plan approved via plan-html with empty feedback. Second opinion ran inline (no subagent tool in this runtime); disclosed in the plan.
-- **2026-07-09** — Bumped pi dev stack 0.79.6 → 0.85.0 (lockfile was stale; package.json already declared `latest`). Why: the feature requires `ui_prompt_start` (pi ≥ 0.84.4) and the stale lock made the new event types unavailable.
-- **2026-07-09** — Set peerDep floor `@earendil-works/pi-coding-agent: >=0.84.4`. Why: the extension imports `CONFIG_DIR_NAME` (≥0.79.7), uses `agent_settled` (≥0.80.4) and `ui_prompt_start` (≥0.84.4); older pi would fail at extension load.
-- **2026-07-09** — model-router: `streamSimple` now imported from `@earendil-works/pi-ai/compat` (no longer in the pi-ai main entry), and `"max"` added to `THINKING_LEVELS` (pi-agent-core 0.85 added `"max"` to `ThinkingLevel`). Why: the pi bump surfaced a latent break — a fresh `npm install` on the old lock would have failed typecheck regardless of this feature.
-- **2026-07-09** — Added `@earendil-works/pi-server` as a devDependency. Why: pi-coding-agent 0.85.0's library entry (`dist/index.js` → `main.js` → `experimental/server.js`) imports it but does not declare it; the bundled CLI never hits this. Upstream packaging bug — file an issue with earendil-works.
+- **2026-09-04** — Clarifying round A: ring on both `agent_settled` (idle) and `ui_prompt_start`; bell only, no visual cue; pi setting `inputBell` default-on with per-project override. Why: operator answers at plan intake.
+- **2026-09-04** — Plan approved via plan-html with empty feedback. Second opinion ran inline (no subagent tool in this runtime); disclosed in the plan.
+- **2026-09-04** — Bumped pi dev stack 0.79.6 → 0.85.0 (lockfile was stale; package.json already declared `latest`). Why: the feature requires `ui_prompt_start` (pi ≥ 0.84.4) and the stale lock made the new event types unavailable.
+- **2026-09-04** — Set peerDep floor `@earendil-works/pi-coding-agent: >=0.84.4`. Why: the extension imports `CONFIG_DIR_NAME` (≥0.79.7), uses `agent_settled` (≥0.80.4) and `ui_prompt_start` (≥0.84.4); older pi would fail at extension load.
+- **2026-09-04** — model-router: `streamSimple` now imported from `@earendil-works/pi-ai/compat` (no longer in the pi-ai main entry), and `"max"` added to `THINKING_LEVELS` (pi-agent-core 0.85 added `"max"` to `ThinkingLevel`). Why: the pi bump surfaced a latent break — a fresh `npm install` on the old lock would have failed typecheck regardless of this feature.
+- **2026-09-04** — Added `@earendil-works/pi-server` as a devDependency. Why: pi-coding-agent 0.85.0's library entry (`dist/index.js` → `main.js` → `experimental/server.js`) imports it but does not declare it; the bundled CLI never hits this. Upstream packaging bug — file an issue with earendil-works.
 
 ## Progress
 
-- **2026-07-09** — Spec created (local, no GitHub issue), triaged as enhancement/S/P1.
-- **2026-07-09** — Implemented: extension, 10 behavioral tests, registration test, changeset, README/AGENTS/catalog updates, pi stack bump + model-router compat fixes. `npm run check` green (112 tests).
-- **2026-07-09** — Pushed `feature/001-ring-terminal-bell-for-input`, opened PR #2 (no GitHub issue — local spec).
-- **2026-07-09** — Review converged iter 1 (APPROVE, 0 findings, 0 open threads, CI green). Stage → GATE.
+- **2026-09-04** — Spec created (local, no GitHub issue), triaged as enhancement/S/P1.
+- **2026-09-04** — Implemented: extension, 10 behavioral tests, registration test, changeset, README/AGENTS/catalog updates, pi stack bump + model-router compat fixes. `npm run check` green (112 tests).
+- **2026-09-04** — Pushed `feature/001-ring-terminal-bell-for-input`, opened PR #2 (no GitHub issue — local spec).
+- **2026-09-04** — Review converged iter 1 (APPROVE, 0 findings, 0 open threads, CI green). Stage → GATE.
 
 ## PR convergence ledger
 
-- **2026-07-09 iter 1** — verdict: APPROVE; mergeable: MERGEABLE; findings_hash: (empty); threads_open: 0; action: stop; head_sha: 9b48824. Note: review-loop worker subagents unavailable in this runtime — review-pr checklists + CI verification ran inline in the orchestrator; disclosed here and in the Second opinion section.
+- **2026-09-04 iter 1** — verdict: APPROVE; mergeable: MERGEABLE; findings_hash: (empty); threads_open: 0; action: stop; head_sha: 9b48824. Note: review-loop worker subagents unavailable in this runtime — review-pr checklists + CI verification ran inline in the orchestrator; disclosed here and in the Second opinion section.
 
 ## Gate verdict
 
-<Filled by `/hs-merge-gate` before the PR merges.>
+- **2026-09-04** — verdict: PASS; checks: 12 passed / 0 failed / 0 followups; followups: none; one-line: all 4 success criteria evidenced by passing tests + code, all 4 non-goals verified, docs (README/changeset/catalog/AGENTS) accurate.
+  - 2026-09-04 dimensions:
+    - acceptance — PASS — SC1 turn-end bell: `agent_settled`+`isIdle()` handler (index.ts:57-61), test passes; SC2 dialog bell: `ui_prompt_start` handler (index.ts:64-66), test passes; SC3 setting: global/project/trust/default reader (index.ts:18-38), 4 tests pass; SC4 no BEL in print/JSON/RPC + no startup bell: mode guard (index.ts:48) tested for 3 modes; `agent_settled` fires only after a real run (pi-coding-agent agent-session.js:773,784)
+    - non-goals — PASS — NG1 no visual cue: `notify` only in explicit `/input-bell` command handler (index.ts:75); NG2 no sound customization: single `BEL` constant; NG3 built-in dialogs untouched: only `ui_prompt_start` + `agent_settled` hooked; NG4 no pi changes: diff touches pi-devkit files only
+    - doc accuracy — PASS — README Contents entry, `.changesets/001-input-bell.md` (valid schema, user-facing), `docs/catalog.md` regenerated with input-bell row, AGENTS.md module map updated
+    - note: validator subagents unavailable in this runtime — dimensions ran inline in the orchestrator; disclosed here

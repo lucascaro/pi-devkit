@@ -4,12 +4,13 @@ type: enhancement
 complexity: S
 priority: P1
 pr: 2
-stage: GATE
+shipped: 2026-09-04
+stage: DONE
 ---
 
 # Ring terminal bell when input is needed
 
-- **Exec plan:** [docs/exec-plans/active/001-ring-terminal-bell-for-input.md](../exec-plans/active/001-ring-terminal-bell-for-input.md)
+- **Exec plan:** [docs/exec-plans/completed/001-ring-terminal-bell-for-input.md](../exec-plans/completed/001-ring-terminal-bell-for-input.md)
 
 ## Problem
 
