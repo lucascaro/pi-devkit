@@ -1,7 +1,6 @@
 import {
   calculateCost,
   createAssistantMessageEventStream,
-  streamSimple,
   type Api,
   type AssistantMessage,
   type AssistantMessageEventStream,
@@ -10,6 +9,8 @@ import {
   type SimpleStreamOptions,
   type Message,
 } from "@earendil-works/pi-ai";
+// streamSimple is no longer exported from the pi-ai main entry; the compat subpath keeps the legacy function (same behavior).
+import { streamSimple } from "@earendil-works/pi-ai/compat";
 import type {
   ExtensionAPI,
   ExtensionContext,
