@@ -138,10 +138,11 @@ pi -e ./extensions/input-bell/index.ts
 - **2026-07-09** — Spec created (local, no GitHub issue), triaged as enhancement/S/P1.
 - **2026-07-09** — Implemented: extension, 10 behavioral tests, registration test, changeset, README/AGENTS/catalog updates, pi stack bump + model-router compat fixes. `npm run check` green (112 tests).
 - **2026-07-09** — Pushed `feature/001-ring-terminal-bell-for-input`, opened PR #2 (no GitHub issue — local spec).
+- **2026-07-09** — Review converged iter 1 (APPROVE, 0 findings, 0 open threads, CI green). Stage → GATE.
 
 ## PR convergence ledger
 
-<Append-only. One entry per `/hs-review-loop` iteration.>
+- **2026-07-09 iter 1** — verdict: APPROVE; mergeable: MERGEABLE; findings_hash: (empty); threads_open: 0; action: stop; head_sha: 9b48824. Note: review-loop worker subagents unavailable in this runtime — review-pr checklists + CI verification ran inline in the orchestrator; disclosed here and in the Second opinion section.
 
 ## Gate verdict
 

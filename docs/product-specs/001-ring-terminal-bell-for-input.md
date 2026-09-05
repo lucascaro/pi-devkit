@@ -4,7 +4,7 @@ type: enhancement
 complexity: S
 priority: P1
 pr: 2
-stage: REVIEW
+stage: GATE
 ---
 
 # Ring terminal bell when input is needed
