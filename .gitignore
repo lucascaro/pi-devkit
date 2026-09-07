@@ -5,3 +5,6 @@ coverage/
 .env
 .pi/npm/
 .pi/git/
+
+# hive worktrees
+.worktrees
