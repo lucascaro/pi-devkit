@@ -1,10 +1,20 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fail, parseFrontmatter, walkFiles } from "./validation-lib.ts";
 
-const root = "prompts";
-if (!existsSync(root)) fail("prompts/ directory is missing");
+const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+  pi?: { prompts?: string[] };
+};
 
-const promptFiles = walkFiles(root, (path) => path.endsWith(".md"));
+const promptDirs = pkg.pi?.prompts ?? [];
+if (promptDirs.length === 0) fail("No prompt directories declared in package.json pi.prompts");
+
+const promptFiles: string[] = [];
+for (const dir of promptDirs) {
+  const root = dir.replace(/^\.\//, "");
+  if (!existsSync(root)) fail(`Prompt directory "${root}" is declared in the manifest but does not exist`);
+  promptFiles.push(...walkFiles(root, (path) => path.endsWith(".md")));
+}
+
 if (promptFiles.length === 0) fail("No prompts found");
 
 for (const file of promptFiles) {

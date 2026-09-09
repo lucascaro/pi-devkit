@@ -8,7 +8,7 @@ describe("package manifest", () => {
     expect(pkg.pi).toEqual({
       extensions: ["./extensions"],
       skills: ["./skills"],
-      prompts: ["./prompts"],
+      prompts: ["./prompts", "./extensions/subagent/workflows"],
       themes: ["./themes"]
     });
   });

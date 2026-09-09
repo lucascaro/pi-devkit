@@ -33,7 +33,8 @@
       "./skills"
     ],
     "prompts": [
-      "./prompts"
+      "./prompts",
+      "./extensions/subagent/workflows"
     ],
     "themes": [
       "./themes"

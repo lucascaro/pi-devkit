@@ -8,10 +8,12 @@
 | --- | --- | --- |
 | ambiguity-detection | `./extensions/ambiguity-detection` | No description found. |
 | anti-people-pleasing | `./extensions/anti-people-pleasing` | No description found. |
+| ask-question | `./extensions/ask-question` | Text for the action button (e.g. |
 | guardrails | `./extensions/guardrails` | Show pi-devkit guardrail status |
 | hello | `./extensions/hello` | Greet a person by name. Use for testing that pi-devkit custom tools are loaded. |
 | input-bell | `./extensions/input-bell` | Show input-bell status |
 | model-router | `./extensions/model-router` | Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles |
+| subagent | `./extensions/subagent` | List available subagents |
 
 ## Skills
 
@@ -25,6 +27,9 @@
 | --- | --- | --- |
 | `plan` | `./prompts/plan.md` | Create, evaluate, and refine an implementation plan before starting work |
 | `review` | `./prompts/review.md` | Review code changes for bugs, security, maintainability, and Pi best practices |
+| `implement-and-review` | `./extensions/subagent/workflows/implement-and-review.md` | Worker implements, reviewer reviews, worker applies feedback |
+| `implement` | `./extensions/subagent/workflows/implement.md` | Full implementation workflow - scout gathers context, planner creates plan, worker implements |
+| `scout-and-plan` | `./extensions/subagent/workflows/scout-and-plan.md` | Scout gathers context, planner creates implementation plan (no implementation) |
 
 ## Themes
 

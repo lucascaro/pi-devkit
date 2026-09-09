@@ -26,6 +26,7 @@ pi install ./
 - `extensions/guardrails` - blocks high-risk bash commands unless confirmed.
 - `extensions/input-bell` - rings the terminal bell when pi needs your input (turn ended, dialog waiting); `inputBell` setting, default on.
 - `extensions/model-router` - intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles.
+- `extensions/subagent` - delegate tasks to specialized subagents with isolated context. Hybrid backends (in-process SDK or isolated subprocess), single/parallel/chain modes, and bundled scout/planner/reviewer/worker agents. See `extensions/subagent/README.md`.
 - `skills/pi-package-author` - workflow for authoring Pi packages.
 - `prompts/review.md` - reusable review prompt.
 - `prompts/plan.md` - generic planning prompt that clarifies ambiguity before planning, routes lightweight/full plans, and offers interactive accept/edit/chat choices.
