@@ -64,7 +64,7 @@
     "tsx": "latest",
     "typebox": "latest",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "^4.1.11"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
