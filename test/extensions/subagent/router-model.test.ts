@@ -57,6 +57,22 @@ describe("subagent router model resolution", () => {
     expect(resolveRouterModel("router:medium", cwd)).toBe("openai/global-medium");
   });
 
+  it("uses a configured model directly when it has no alias", () => {
+    writeConfig(join(agentDir, "model-router.json"), {
+      profiles: { default: { low: { model: "openai/direct" } } },
+    });
+
+    expect(resolveRouterModel("router:low", cwd)).toBe("openai/direct");
+  });
+
+  it("treats malformed router config files as missing config", () => {
+    writeFileSync(join(agentDir, "model-router.json"), "{");
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(join(cwd, ".pi", "model-router.json"), "not json");
+
+    expect(resolveRouterModel("router:low", cwd)).toBeUndefined();
+  });
+
   it("returns undefined for unknown tiers, profiles, or absent config", () => {
     writeConfig(join(agentDir, "model-router.json"), {
       profiles: { default: { low: { model: "openai/low" } } },
