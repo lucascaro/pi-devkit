@@ -84,13 +84,19 @@ jobs:
           PLUGIN: ${{ inputs.plugin }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::Configure NPM_TOKEN in the npm-publish environment."
-            exit 1
-          fi
           case "$PLUGIN" in
             guardrails|input-bell|model-router|subagent) PACKAGE_DIR="packages/$PLUGIN" ;;
             *) echo "::error::Unsupported plugin: $PLUGIN"; exit 1 ;;
           esac
           cd "$PACKAGE_DIR"
+          PACKAGE_NAME=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).name")
+          PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
+          if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --silent >/dev/null 2>&1; then
+            echo "$PACKAGE_NAME@$PACKAGE_VERSION is already published; skipping."
+            exit 0
+          fi
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::Configure NPM_TOKEN in the npm-publish environment."
+            exit 1
+          fi
           npm publish --access public --provenance

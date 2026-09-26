@@ -26,4 +26,13 @@ describe("standalone plugin publish workflow", () => {
     expect(workflow).toMatch(/NODE_AUTH_TOKEN:\s+\$\{\{ secrets\.NPM_TOKEN \}\}/);
     expect(workflow).toContain("npm publish --access public --provenance");
   });
+
+  it("skips an already-published version before requiring the publish token", () => {
+    const registryCheck = 'npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --silent';
+    const tokenCheck = 'if [ -z "${NODE_AUTH_TOKEN:-}" ]';
+
+    expect(workflow).toContain(registryCheck);
+    expect(workflow).toContain('is already published; skipping.');
+    expect(workflow.indexOf(registryCheck)).toBeLessThan(workflow.indexOf(tokenCheck));
+  });
 });
