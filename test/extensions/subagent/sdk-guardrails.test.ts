@@ -47,9 +47,10 @@ describe("SDK subagent guardrails", () => {
     tempDir = await mkdtemp(join(tmpdir(), "pi-subagent-guardrails-"));
     const cwd = join(tempDir, "project");
     const agentDir = join(tempDir, "agent");
-    const loader = createSdkSubagentResourceLoader(cwd, agentDir, "");
+    const loader = createSdkSubagentResourceLoader(cwd, agentDir, "Agent-specific instructions");
 
     await loader.reload();
+    expect(loader.getAppendSystemPrompt()).toContain("Agent-specific instructions");
 
     const extensions = loader.getExtensions().extensions;
     expect(extensions).toHaveLength(1);
@@ -71,5 +72,22 @@ describe("SDK subagent guardrails", () => {
       input: { command: "npm test" },
     });
     expect(allowed).toBeUndefined();
+
+    const readCall = await handler?.({
+      type: "tool_call",
+      toolName: "read",
+      toolCallId: "read-call",
+      input: { path: "/tmp/example" },
+    });
+    expect(readCall).toBeUndefined();
+  });
+
+  it("does not append a blank agent prompt", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "pi-subagent-blank-prompt-"));
+    const loader = createSdkSubagentResourceLoader(tempDir, join(tempDir, "agent"), " \n ");
+
+    await loader.reload();
+
+    expect(loader.getAppendSystemPrompt()).toEqual([]);
   });
 });
