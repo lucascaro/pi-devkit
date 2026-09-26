@@ -110,6 +110,9 @@ Override any of them by creating an agent with the same name in
 - Subagents inherit the parent session's model auth. They run with your system
   permissions — review agent definitions before installing packages that ship
   them.
+- SDK subagents block Bash commands classified as destructive or
+  privilege-sensitive by pi-devkit guardrails. SDK sessions cannot show a
+  confirmation prompt, so these commands are blocked rather than confirmed.
 
 ## Usage examples
 

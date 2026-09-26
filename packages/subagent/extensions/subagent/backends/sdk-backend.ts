@@ -6,8 +6,9 @@
  * resource efficiency (one provider/auth resolution, one model catalog).
  *
  * The agent's system prompt is injected via a DefaultResourceLoader with
- * appendSystemPrompt, and extension/skill/prompt/theme loading is disabled to
- * avoid recursion (loading the subagent extension itself) and heavy I/O.
+ * appendSystemPrompt. User extensions/skills/prompts/themes are disabled to
+ * avoid recursion and heavy I/O; a targeted inline guardrail still blocks
+ * dangerous Bash calls because SDK subagents have no confirmation UI.
  */
 
 import {
@@ -31,6 +32,7 @@ import type {
 } from "../types.ts";
 import { emptyUsage, resolveSystemPrompt } from "../types.ts";
 import { resolveRouterModel } from "../router-model.ts";
+import { sdkSubagentGuardrails } from "../sdk-guardrails.ts";
 
 // ---------------------------------------------------------------------------
 // Shared ModelRuntime (singleton)
@@ -70,6 +72,26 @@ function toStandardMessages(messages: Array<{ role: string }>): Message[] {
   return messages.filter(
     (m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult",
   ) as Message[];
+}
+
+export function createSdkSubagentResourceLoader(
+  cwd: string,
+  agentDir: string,
+  systemPrompt: string,
+): DefaultResourceLoader {
+  const loaderOptions: ConstructorParameters<typeof DefaultResourceLoader>[0] = {
+    cwd,
+    agentDir,
+    noExtensions: true,
+    noSkills: true,
+    noPromptTemplates: true,
+    noThemes: true,
+    extensionFactories: [sdkSubagentGuardrails],
+  };
+  if (systemPrompt.trim()) {
+    loaderOptions.appendSystemPrompt = [systemPrompt];
+  }
+  return new DefaultResourceLoader(loaderOptions);
 }
 
 // ---------------------------------------------------------------------------
@@ -131,20 +153,9 @@ export class SDKBackend implements Backend {
     // Resolve the system prompt (supports dynamic TS agents).
     const systemPrompt = await resolveSystemPrompt(def, { cwd: options.cwd });
 
-    // Build a resource loader that appends the agent's system prompt and skips
-    // extensions/skills/prompts/themes (avoids recursion + heavy I/O).
-    const loaderOptions: ConstructorParameters<typeof DefaultResourceLoader>[0] = {
-      cwd: options.cwd,
-      agentDir: getAgentDir(),
-      noExtensions: true,
-      noSkills: true,
-      noPromptTemplates: true,
-      noThemes: true,
-    };
-    if (systemPrompt.trim()) {
-      loaderOptions.appendSystemPrompt = [systemPrompt];
-    }
-    const loader = new DefaultResourceLoader(loaderOptions);
+    // Keep user resources disabled to avoid recursion and heavy I/O while
+    // retaining the SDK-only dangerous-command guardrail.
+    const loader = createSdkSubagentResourceLoader(options.cwd, getAgentDir(), systemPrompt);
     await loader.reload();
 
     const sessionManager = SessionManager.inMemory(options.cwd);
