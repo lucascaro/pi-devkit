@@ -1,4 +1,12 @@
-# Subagent Extension
+# Pi Subagent
+
+Install this extension on its own:
+
+```bash
+pi install npm:@lucascaro/pi-subagent
+```
+
+It is also included in the batteries-included `@lucascaro/pi-devkit` package. Choose one package by default; installing both can load the subagent extension twice.
 
 Delegate tasks to specialized subagents with isolated context windows. Each
 subagent runs with its own context, model, and tool set, so it doesn't pollute

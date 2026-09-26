@@ -1,0 +1,96 @@
+name: Publish standalone plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: Standalone plugin workspace to publish
+        required: true
+        type: choice
+        options:
+          - guardrails
+          - input-bell
+          - model-router
+          - subagent
+      confirm_publish:
+        description: I reviewed this package and approve its npm publication
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-plugin-${{ inputs.plugin }}
+  cancel-in-progress: false
+
+jobs:
+  require-confirmation:
+    if: ${{ !inputs.confirm_publish }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Set confirm_publish=true to approve publishing the selected plugin."
+          exit 1
+
+  validate:
+    if: ${{ inputs.confirm_publish }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run check
+      - name: Validate selected package is public
+        env:
+          PLUGIN: ${{ inputs.plugin }}
+        run: |
+          case "$PLUGIN" in
+            guardrails|input-bell|model-router|subagent) PACKAGE_DIR="packages/$PLUGIN" ;;
+            *) echo "::error::Unsupported plugin: $PLUGIN"; exit 1 ;;
+          esac
+          node --input-type=module - "$PACKAGE_DIR" <<'NODE'
+          import { readFileSync } from "node:fs";
+          import { resolve } from "node:path";
+
+          const packageDir = resolve(process.argv[2]);
+          const manifest = JSON.parse(readFileSync(resolve(packageDir, "package.json"), "utf8"));
+          const expectedName = `@lucascaro/pi-${process.env.PLUGIN}`;
+          if (manifest.private === true) throw new Error(`${manifest.name} is private`);
+          if (manifest.name !== expectedName) throw new Error(`Expected ${expectedName}, found ${manifest.name}`);
+          console.log(`Validated ${manifest.name}@${manifest.version}`);
+          NODE
+
+  publish:
+    if: ${{ inputs.confirm_publish }}
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Publish selected workspace
+        env:
+          PLUGIN: ${{ inputs.plugin }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::Configure NPM_TOKEN in the npm-publish environment."
+            exit 1
+          fi
+          case "$PLUGIN" in
+            guardrails|input-bell|model-router|subagent) PACKAGE_DIR="packages/$PLUGIN" ;;
+            *) echo "::error::Unsupported plugin: $PLUGIN"; exit 1 ;;
+          esac
+          cd "$PACKAGE_DIR"
+          npm publish --access public --provenance

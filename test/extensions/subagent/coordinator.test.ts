@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Coordinator } from "../../../extensions/subagent/coordinator.ts";
+import { Coordinator } from "../../../packages/subagent/extensions/subagent/coordinator.ts";
 import {
   emptyUsage,
   type AgentDefinition,
   type AgentResult,
   type Backend,
   type ExecuteOptions,
-} from "../../../extensions/subagent/types.ts";
+} from "../../../packages/subagent/extensions/subagent/types.ts";
 
 function makeAgent(overrides: Partial<AgentDefinition> = {}): AgentDefinition {
   return {

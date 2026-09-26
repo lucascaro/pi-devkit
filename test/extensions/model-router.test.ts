@@ -14,7 +14,7 @@ import {
   profileNames,
   getUnsupportedTiers,
   collectProfileThinkingLevels,
-} from "../../extensions/model-router/config.js";
+} from "../../packages/model-router/extensions/model-router/config.js";
 import {
   extractTextFromContent,
   getLastUserText,
@@ -27,12 +27,12 @@ import {
   resolveAvailableTier,
   decideRouting,
   buildRoutingDecision,
-} from "../../extensions/model-router/routing.js";
+} from "../../packages/model-router/extensions/model-router/routing.js";
 import {
   isRouterPersistedState,
   buildPersistedState,
-} from "../../extensions/model-router/state.js";
-import { formatDecision } from "../../extensions/model-router/ui.js";
+} from "../../packages/model-router/extensions/model-router/state.js";
+import { formatDecision } from "../../packages/model-router/extensions/model-router/ui.js";
 import type {
   RouterConfig,
   RouterProfile,
@@ -40,7 +40,7 @@ import type {
   RoutingRule,
   RoutingDecision,
   RouterPersistedState,
-} from "../../extensions/model-router/types.js";
+} from "../../packages/model-router/extensions/model-router/types.js";
 import type { Context } from "@earendil-works/pi-ai";
 
 // ── config.ts tests ──────────────────────────────────────────────

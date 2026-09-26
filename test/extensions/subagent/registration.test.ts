@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import subagentExtension from "../../../extensions/subagent/index.ts";
+import subagentExtension from "../../../packages/subagent/extensions/subagent/index.ts";
 
 function mockPi() {
   return {

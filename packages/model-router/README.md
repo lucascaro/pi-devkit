@@ -39,7 +39,13 @@ Project config overrides global config.
 
 ## Installation
 
-This extension is included in `pi-devkit`. After installing the package, the router is available automatically.
+Install it alone:
+
+```bash
+pi install npm:@lucascaro/pi-model-router
+```
+
+It is also included in the batteries-included `@lucascaro/pi-devkit` package. Choose one package by default; installing both can load the router twice. After installation, run `/router init` to create a configuration.
 
 ### Basic Config Shape
 

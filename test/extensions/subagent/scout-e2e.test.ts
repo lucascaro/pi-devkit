@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { resolveRouterModel } from "../../../extensions/subagent/backends/sdk-backend.ts";
-import { discoverAgents } from "../../../extensions/subagent/agents.ts";
+import { resolveRouterModel } from "../../../packages/subagent/extensions/subagent/router-model.ts";
+import { discoverAgents } from "../../../packages/subagent/extensions/subagent/agents.ts";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 const BUNDLED_AGENTS_DIR = path.join(
   import.meta.dirname,
-  "../../../extensions/subagent/agents",
+  "../../../packages/subagent/extensions/subagent/agents",
 );
 
 describe("scout subagent end-to-end", () => {

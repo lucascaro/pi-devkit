@@ -1,8 +1,8 @@
 # pi-devkit
 
-Personal Pi package for developing, tracking, testing, and sharing Pi extensions, skills, prompt templates, and themes.
+A batteries-included Pi package with extensions, skills, prompt templates, and themes. Extensions also live in npm workspaces so selected plugins can be installed independently.
 
-## Install
+## Install the full devkit
 
 From GitHub:
 
@@ -10,72 +10,77 @@ From GitHub:
 pi install git:github.com/lucascaro/pi-devkit@v0.1.0
 ```
 
+From npm, once the umbrella package is published:
+
+```bash
+pi install npm:@lucascaro/pi-devkit
+```
+
 For local development:
 
 ```bash
 git clone git@github.com:lucascaro/pi-devkit.git ~/checkout/pi-devkit
 cd ~/checkout/pi-devkit
-npm install
+npm ci
 npm run check
 pi install ./
 ```
 
-## Contents
+## Install one plugin
 
-- `extensions/hello` - minimal custom tool example.
-- `extensions/guardrails` - blocks high-risk bash commands unless confirmed.
-- `extensions/input-bell` - rings the terminal bell when pi needs your input (turn ended, dialog waiting); `inputBell` setting, default on.
-- `extensions/model-router` - intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles.
-- `extensions/subagent` - delegate tasks to specialized subagents with isolated context. Hybrid backends (in-process SDK or isolated subprocess), single/parallel/chain modes, and bundled scout/planner/reviewer/worker agents. See `extensions/subagent/README.md`.
-- `skills/pi-package-author` - workflow for authoring Pi packages.
-- `prompts/review.md` - reusable review prompt.
-- `prompts/plan.md` - generic planning prompt that clarifies ambiguity before planning, routes lightweight/full plans, and offers interactive accept/edit/chat choices.
-- `themes/lucas-dark.json` - complete custom Pi theme.
+After publication, install a plugin without the full devkit:
 
-See `docs/catalog.md` for the maintained inventory.
+```bash
+pi install npm:@lucascaro/pi-guardrails
+pi install npm:@lucascaro/pi-input-bell
+pi install npm:@lucascaro/pi-model-router
+pi install npm:@lucascaro/pi-subagent
+```
+
+Each public plugin has a README under `packages/<plugin>/`. Install either the umbrella package or individual plugins by default. Installing the same plugin both ways can load it twice; Pi package resource filters can exclude it from the umbrella package when combining installs intentionally.
+
+## What's included
+
+- `packages/guardrails` — blocks high-risk bash commands unless confirmed.
+- `packages/input-bell` — rings the terminal bell when Pi is waiting for input.
+- `packages/model-router` — routes turns across model tiers and profiles.
+- `packages/subagent` — delegates tasks to specialized agents; includes workflow prompts.
+- `packages/ambiguity-detection`, `packages/anti-people-pleasing`, and `packages/ask-question` — additional prompt/tool extensions.
+- `packages/hello` — private example extension used for smoke tests.
+- `skills/`, `prompts/`, and `themes/` — shared devkit resources.
+
+See `docs/catalog.md` for the generated inventory. The shared `prompts/plan.md` and `prompts/review.md` are available with the umbrella package; `subagent` workflow prompts ship with that plugin.
+
+## Usage example
+
+Create a plan without immediately implementing:
+
+```text
+/plan add a statusline extension
+```
+
+The plan prompt clarifies ambiguity, evaluates scope and risk, and asks whether to implement, refine the plan, or continue discussing.
 
 ## Development
 
+The repository uses npm workspaces. Run the full validation suite, including package metadata and npm tarball checks:
+
 ```bash
-npm install
-npm run typecheck
-npm run validate
-npm test
+npm ci
 npm run check
 ```
 
-Quick-test a single extension:
+Quick-test the hello extension:
 
 ```bash
-pi -e ./extensions/hello/index.ts
+pi -e ./packages/hello/extensions/hello/index.ts
 ```
 
 Reload installed local changes inside Pi with `/reload`.
 
-## Usage examples
+## Pi package layout
 
-Create a plan without immediately implementing:
-
-```txt
-/plan add a statusline extension
-```
-
-The plan prompt first clarifies ambiguous or risky assumptions, evaluates scope and risk, chooses a lightweight or full plan, then asks whether to accept and implement, edit the plan, or keep chatting. Implementation should start only after explicit approval.
-
-## Pi package manifest
-
-This repository is a Pi package through the `pi` key in `package.json`:
-
-```json
-{
-  "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"],
-    "prompts": ["./prompts"],
-    "themes": ["./themes"]
-  }
-}
-```
+The root `package.json` is the batteries-included Pi package and points at each workspace's resource directories. Each public workspace has its own `package.json` and Pi manifest, so it can be packed and installed on its own. Generic skills, prompts, and themes remain in the root package; plugin-specific resources ship with their plugin.
 
 ## Security
 

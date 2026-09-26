@@ -4,13 +4,11 @@ Security posture. Trust boundaries, secret handling, and the rules code is expec
 
 ## Trust boundaries
 
-<Where untrusted input enters the system. Each entry should name the validator that gates it.>
-
-- <Boundary> — validated by <module/function>
+- Manual plugin publication — limited to the four public workspaces by `.github/workflows/publish-plugin.yml`; the selected manifest is checked before publication and npm validates package ownership/version.
 
 ## Secrets
 
-- <Where secrets live, who can read them, and how they are rotated.>
+- `NPM_TOKEN` belongs only in the GitHub `npm-publish` environment. Configure required reviewers on that environment; the publish job reads the token only after repository checks and environment approval. Never store the token in the repository or print it in workflow logs.
 
 ## Authentication & authorization
 

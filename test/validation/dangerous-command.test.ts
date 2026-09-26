@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerousCommandReason, isDangerousCommand } from "../../src/lib/dangerous-command.ts";
+import { dangerousCommandReason, isDangerousCommand } from "../../packages/guardrails/src/lib/dangerous-command.ts";
 
 describe("dangerous command detection", () => {
   it.each([

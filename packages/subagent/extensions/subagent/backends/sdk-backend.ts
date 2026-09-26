@@ -30,73 +30,7 @@ import type {
   UsageStats,
 } from "../types.ts";
 import { emptyUsage, resolveSystemPrompt } from "../types.ts";
-
-// Lazy import to avoid loading the model-router extension unless needed.
-let _loadRouterConfig: ((cwd: string) => any) | undefined;
-async function getLoadRouterConfig() {
-  if (_loadRouterConfig) return _loadRouterConfig;
-  try {
-    const mod = await import("../../model-router/config.js");
-    _loadRouterConfig = mod.loadRouterConfig;
-  } catch {
-    _loadRouterConfig = undefined;
-  }
-  return _loadRouterConfig;
-}
-
-/**
- * Resolve a "router:" prefixed model reference against the router config.
- * Returns the canonical model string, or undefined if the router config
- * is unavailable or the reference is invalid.
- */
-export async function resolveRouterModel(
-  ref: string,
-  cwd: string,
-): Promise<string | undefined> {
-  const loader = await getLoadRouterConfig();
-  if (!loader) return undefined;
-
-  const result = loader(cwd);
-  if (!result?.config?.profiles) return undefined;
-
-  // Parse "router:low" → tier = "low", default profile = first available
-  const prefix = "router:";
-  if (!ref.startsWith(prefix)) return undefined;
-  const tierStr = ref.slice(prefix.length).trim();
-  const validTiers = ["high", "medium", "low"] as const;
-  const tier: "high" | "medium" | "low" | undefined = validTiers.includes(tierStr as typeof validTiers[number])
-    ? (tierStr as "high" | "medium" | "low")
-    : undefined;
-  if (!tier) return undefined;
-  // TypeScript doesn't narrow after the above if, so we assert.
-  const tierSafe = tier!;
-
-  const profiles = result.config.profiles;
-  const profileNames = Object.keys(profiles);
-
-  // Use first profile if no name specified, or try "router:<profile>:<tier>"
-  if (profileNames.length === 0) return undefined;
-
-  // Check for "router:<profile>:<tier>" format
-  const parts = ref.slice(prefix.length).split(":");
-  if (parts.length === 2) {
-    const profileName = parts[0] as string;
-    const profileTierStr = parts[1] as string;
-    const profile = profiles[profileName];
-    if (profile && Object.hasOwn(profile, profileTierStr)) {
-      const tierConfig = profile[profileTierStr] as { model?: string } | undefined;
-      if (tierConfig?.model) return tierConfig.model;
-    }
-  }
-
-  // Default profile — use tier in a type-safe way
-  const defaultProfileName = profileNames[0] as string;
-  const defaultProfile = profiles[defaultProfileName] as Record<string, { model?: string } | undefined>;
-  if (!defaultProfile) return undefined;
-  const tierConfig = defaultProfile[tierSafe];
-  if (tierConfig?.model) return tierConfig.model;
-  return undefined;
-}
+import { resolveRouterModel } from "../router-model.ts";
 
 // ---------------------------------------------------------------------------
 // Shared ModelRuntime (singleton)

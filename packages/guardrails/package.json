@@ -1,0 +1,14 @@
+{
+  "name": "@lucascaro/pi-guardrails",
+  "version": "0.1.0",
+  "description": "Block high-risk bash commands unless confirmed.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "keywords": ["pi-package", "pi", "coding-agent", "safety"],
+  "files": ["extensions", "src", "README.md", "LICENSE"],
+  "pi": { "extensions": ["./extensions"] },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.84.4"
+  }
+}

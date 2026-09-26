@@ -34,7 +34,17 @@ if (pi.extensions) {
       // The ^ anchor with 'm' flag matches only at line starts,
       // so it won't match description: inside nested calls like Type.String({ description: ... }).
       const descMatch = source.match(/^\s*description:\s*["']([^"']+)["']/m);
-      const description = descMatch?.[1]?.trim() ?? "No description found.";
+      const workspacePackagePath = join(absPath, "..", "package.json");
+      let workspaceDescription: string | undefined;
+      if (existsSync(workspacePackagePath)) {
+        try {
+          const workspacePackage = JSON.parse(readFileSync(workspacePackagePath, "utf8")) as { description?: string };
+          workspaceDescription = workspacePackage.description;
+        } catch {
+          // Fall back to the extension source if workspace metadata is invalid.
+        }
+      }
+      const description = workspaceDescription?.trim() || descMatch?.[1]?.trim() || "No description found.";
       lines.push(`| ${name} | \`${relPath}/${name}\` | ${description} |`);
     }
   }
