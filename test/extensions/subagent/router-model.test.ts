@@ -80,6 +80,7 @@ describe("subagent router model resolution", () => {
 
     expect(resolveRouterModel("router:high", cwd)).toBeUndefined();
     expect(resolveRouterModel("router:missing:low", cwd)).toBeUndefined();
+    expect(resolveRouterModel("router:default:low:extra", cwd)).toBeUndefined();
     expect(resolveRouterModel("router:unknown", cwd)).toBeUndefined();
     expect(resolveRouterModel("openai/gpt", cwd)).toBeUndefined();
   });

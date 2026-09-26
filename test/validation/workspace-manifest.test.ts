@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -15,7 +15,10 @@ function readPackage(path: string): PackageJson {
 
 describe("npm workspace package manifests", () => {
   const root = readPackage("package.json");
-  const packageDirs = readdirSync("packages").sort();
+  const packageDirs = readdirSync("packages", { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join("packages", entry.name, "package.json")))
+    .map((entry) => entry.name)
+    .sort();
 
   it("keeps every plugin workspace in the umbrella package", () => {
     expect(root.workspaces).toContain("packages/*");
