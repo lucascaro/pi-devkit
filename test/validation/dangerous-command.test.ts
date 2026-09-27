@@ -7,6 +7,11 @@ describe("dangerous command detection", () => {
     "sudo make install",
     "git reset --hard HEAD~1",
     "git push origin main --force-with-lease",
+    "rm -r -f /tmp/example",
+    "rm --recursive /tmp/example",
+    "true;rm -rf /tmp/example",
+    "true;git push -f origin main",
+    "/usr/bin/sudo whoami",
     "chmod -R 777 .",
     "kubectl delete namespace prod",
     "psql -c 'DROP TABLE users'"
@@ -16,6 +21,7 @@ describe("dangerous command detection", () => {
 
   it.each([
     "rm file.txt",
+    "rm -f file.txt",
     "git status",
     "npm test",
     "kubectl get pods",

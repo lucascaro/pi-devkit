@@ -11,6 +11,11 @@ const dangerousCommands = [
   "sudo make install",
   "git reset --hard HEAD~1",
   "git push origin main --force-with-lease",
+  "rm -r -f /tmp/example",
+  "rm --recursive /tmp/example",
+  "true;rm -rf /tmp/example",
+  "true;git push -f origin main",
+  "/usr/bin/sudo whoami",
   "chmod -R 777 .",
   "chown -R root /tmp",
   "dd if=/dev/zero of=/dev/sda",
@@ -23,6 +28,7 @@ const dangerousCommands = [
 
 const safeCommands = [
   "rm file.txt",
+  "rm -f file.txt",
   "git status",
   "npm test",
   "kubectl get pods",
@@ -61,7 +67,7 @@ describe("SDK subagent guardrails", () => {
       type: "tool_call",
       toolName: "bash",
       toolCallId: "dangerous-call",
-      input: { command: "rm -rf /tmp/example" },
+      input: { command: "true;rm -rf /tmp/example" },
     });
     expect(blocked).toMatchObject({ block: true });
 
