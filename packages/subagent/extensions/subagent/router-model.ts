@@ -51,7 +51,7 @@ function mergeRouterConfig(globalConfig: JsonRecord, projectConfig: JsonRecord):
 }
 
 /** Resolve router:<tier> or router:<profile>:<tier> from the router config files. */
-export function resolveRouterModel(ref: string, cwd: string): string | undefined {
+export function resolveRouterModel(ref: string, cwd: string, projectTrusted = false): string | undefined {
   if (!ref.startsWith("router:")) return undefined;
 
   const parts = ref.slice("router:".length).trim().split(":");
@@ -69,7 +69,7 @@ export function resolveRouterModel(ref: string, cwd: string): string | undefined
 
   const config = mergeRouterConfig(
     readConfig(join(getAgentDir(), "model-router.json")),
-    readConfig(join(cwd, ".pi", "model-router.json")),
+    projectTrusted ? readConfig(join(cwd, ".pi", "model-router.json")) : {},
   );
   const profiles = asRecord(config.profiles) ?? {};
   const selectedProfileName = profileName ?? Object.keys(profiles)[0];

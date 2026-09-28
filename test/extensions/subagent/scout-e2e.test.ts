@@ -21,7 +21,7 @@ describe("scout subagent end-to-end", () => {
   });
 
   it("resolves scout's router:low against the router config", async () => {
-    const resolved = await resolveRouterModel("router:low", process.cwd());
+    const resolved = await resolveRouterModel("router:low", process.cwd(), true);
     // Should resolve to the first profile's low tier model
     expect(resolved).toBeDefined();
     expect(typeof resolved).toBe("string");

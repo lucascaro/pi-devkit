@@ -83,6 +83,7 @@ export interface DispatchParams {
   onUpdate?: ((partial: AgentResult, index: number) => void) | undefined;
   parentModel?: Model<any> | undefined;
   parentThinkingLevel?: ThinkingLevel | undefined;
+  projectTrusted?: boolean | undefined;
   maxTasks?: number | undefined;
   concurrency?: number | undefined;
 }
@@ -228,6 +229,7 @@ export class Coordinator {
       onUpdate: p.onUpdate ? (partial: AgentResult) => p.onUpdate!(partial, index) : undefined,
       parentModel: p.parentModel,
       parentThinkingLevel: p.parentThinkingLevel,
+      projectTrusted: p.projectTrusted,
     };
 
     try {

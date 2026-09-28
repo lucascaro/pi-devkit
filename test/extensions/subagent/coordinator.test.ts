@@ -105,6 +105,29 @@ describe("Coordinator.backend selection", () => {
     expect(subprocess.calls).toHaveLength(1);
     expect(sdk.calls).toHaveLength(0);
   });
+
+  it("passes project trust to the selected backend", async () => {
+    let receivedTrust: boolean | undefined;
+    const sdk: Backend = {
+      async execute(def, _task, options) {
+        receivedTrust = options.projectTrusted;
+        return makeResult(def.name);
+      },
+    };
+    const coordinator = new Coordinator({ sdk, subprocess: mockBackend("subprocess", (a) => makeResult(a)) });
+    const agents = new Map([["a", makeAgent({ name: "a" })]]);
+
+    await coordinator.dispatch({
+      mode: "single",
+      agent: "a",
+      task: "t",
+      agents,
+      cwd: "/tmp",
+      projectTrusted: false,
+    });
+
+    expect(receivedTrust).toBe(false);
+  });
 });
 
 describe("Coordinator.parallel", () => {

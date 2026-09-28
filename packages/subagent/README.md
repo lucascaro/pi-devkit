@@ -104,6 +104,8 @@ Override any of them by creating an agent with the same name in
 - **Project-local agents** (`.pi/agents/`) are only loaded in **trusted**
   projects. In an untrusted project, requesting `agentScope: "project"` or
   `"both"` falls back to user-level agents with a note explaining why.
+- Project-level router overrides from `.pi/model-router.json` are used only in
+  trusted projects; global router profiles remain available in untrusted ones.
 - The `subprocess` backend runs each subagent in a separate process with its
   own tool sandbox; use `isolation: process` for agents that should never run
   in-process.

@@ -223,6 +223,8 @@ export interface ExecuteOptions {
   parentModel?: Model<any> | undefined;
   /** Parent thinking level. Used for inheritance. */
   parentThinkingLevel?: ThinkingLevel | undefined;
+  /** Whether project-local model-router configuration is trusted. */
+  projectTrusted?: boolean | undefined;
 }
 
 /** Backend interface — both SDK and subprocess backends implement this. */

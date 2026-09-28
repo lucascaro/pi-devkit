@@ -137,6 +137,7 @@ export default function subagentExtension(pi: ExtensionAPI): void {
         agents,
         cwd: ctx.cwd,
         signal,
+        projectTrusted,
         parentModel: ctx.model,
         parentThinkingLevel: ctx.thinkingLevel,
         maxTasks: params.maxTasks,

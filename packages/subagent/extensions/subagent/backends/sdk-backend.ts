@@ -111,35 +111,27 @@ export class SDKBackend implements Backend {
     let thinkingLevel = def.thinkingLevel ?? options.parentThinkingLevel;
 
     if (def.model) {
-      // Check for router: prefix — resolve against router config.
-      let modelRef = def.model;
+      // Check for router: prefix — resolve against trusted router config.
+      let modelRef: string | undefined = def.model;
       if (def.model.startsWith("router:")) {
-        const resolvedRouter = await resolveRouterModel(def.model, options.cwd);
-        if (resolvedRouter) {
-          modelRef = resolvedRouter;
-        } else {
+        modelRef = await resolveRouterModel(
+          def.model,
+          options.cwd,
+          options.projectTrusted ?? false,
+        );
+        if (!modelRef) {
           // Router config unavailable or invalid — fall through to parent inheritance.
           model = options.parentModel;
         }
       }
 
-      if (modelRef !== def.model) {
-        // Router resolved to a concrete model — resolve it against the runtime.
+      if (modelRef) {
         const resolved = resolveCliModel({ cliModel: modelRef, modelRuntime: runtime });
         if (resolved.model) {
           model = resolved.model;
           if (!def.thinkingLevel && resolved.thinkingLevel) thinkingLevel = resolved.thinkingLevel;
         } else {
           return errorResult(def.name, task, `Model "${modelRef}" not available: ${resolved.error ?? resolved.warning ?? "no match"}`);
-        }
-      } else {
-        // Not a router ref — resolve as before.
-        const resolved = resolveCliModel({ cliModel: def.model, modelRuntime: runtime });
-        if (resolved.model) {
-          model = resolved.model;
-          if (!def.thinkingLevel && resolved.thinkingLevel) thinkingLevel = resolved.thinkingLevel;
-        } else {
-          return errorResult(def.name, task, `Model "${def.model}" not available: ${resolved.error ?? resolved.warning ?? "no match"}`);
         }
       }
     } else {

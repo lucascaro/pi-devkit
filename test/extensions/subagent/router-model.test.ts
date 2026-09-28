@@ -53,8 +53,20 @@ describe("subagent router model resolution", () => {
       profiles: { default: { low: { model: "openai/project-low" } } },
     });
 
-    expect(resolveRouterModel("router:default:low", cwd)).toBe("openai/project-low");
-    expect(resolveRouterModel("router:medium", cwd)).toBe("openai/global-medium");
+    expect(resolveRouterModel("router:default:low", cwd, true)).toBe("openai/project-low");
+    expect(resolveRouterModel("router:medium", cwd, true)).toBe("openai/global-medium");
+  });
+
+  it("ignores project router overrides unless the project is trusted", () => {
+    writeConfig(join(agentDir, "model-router.json"), {
+      profiles: { default: { low: { model: "openai/global-low" } } },
+    });
+    writeConfig(join(cwd, ".pi", "model-router.json"), {
+      profiles: { default: { low: { model: "openai/project-low" } } },
+    });
+
+    expect(resolveRouterModel("router:low", cwd)).toBe("openai/global-low");
+    expect(resolveRouterModel("router:low", cwd, true)).toBe("openai/project-low");
   });
 
   it("uses a configured model directly when it has no alias", () => {
