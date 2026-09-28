@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Ring the terminal bell when Pi needs your input.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucascaro/pi-devkit.git",
+    "directory": "packages/input-bell"
+  },
   "type": "module",
   "engines": { "node": ">=20" },
   "keywords": ["pi-package", "pi", "coding-agent", "terminal"],

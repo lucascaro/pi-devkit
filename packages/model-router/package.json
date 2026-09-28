@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Intelligent per-turn model routing with configurable profiles.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucascaro/pi-devkit.git",
+    "directory": "packages/model-router"
+  },
   "type": "module",
   "engines": { "node": ">=20" },
   "keywords": ["pi-package", "pi", "coding-agent", "model-routing"],

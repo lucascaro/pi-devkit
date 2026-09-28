@@ -22,4 +22,16 @@ describe("package manifest", () => {
       themes: ["./themes"]
     });
   });
+
+  it("declares the public source repository for provenance-enabled packages", () => {
+    const packages = ["guardrails", "input-bell", "model-router", "subagent"] as const;
+    for (const directory of packages) {
+      const pkg = JSON.parse(readFileSync(`packages/${directory}/package.json`, "utf8"));
+      expect(pkg.repository).toEqual({
+        type: "git",
+        url: "https://github.com/lucascaro/pi-devkit.git",
+        directory: `packages/${directory}`,
+      });
+    }
+  });
 });
