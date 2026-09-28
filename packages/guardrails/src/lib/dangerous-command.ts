@@ -35,9 +35,27 @@ function normalizeCommand(command: string): string {
   return substitutionsFlattened.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
 }
 
-export function isDangerousCommand(command: string): boolean {
+function hasDangerousCommand(command: string): boolean {
   const normalized = normalizeCommand(command);
-  return hasRecursiveRm(normalized) || DANGEROUS_PATTERNS.some((pattern) => pattern.test(normalized));
+  if (
+    hasRecursiveRm(command)
+    || DANGEROUS_PATTERNS.some((pattern) => pattern.test(command))
+    || hasRecursiveRm(normalized)
+    || DANGEROUS_PATTERNS.some((pattern) => pattern.test(normalized))
+  ) {
+    return true;
+  }
+
+  const substitutions = /\$\(([^()]*)\)|`([^`]*)`/g;
+  for (const match of command.matchAll(substitutions)) {
+    const contents = match[1] ?? match[2];
+    if (contents && hasDangerousCommand(contents)) return true;
+  }
+  return false;
+}
+
+export function isDangerousCommand(command: string): boolean {
+  return hasDangerousCommand(command);
 }
 
 export function dangerousCommandReason(command: string): string {

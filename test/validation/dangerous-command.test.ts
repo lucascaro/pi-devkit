@@ -11,6 +11,8 @@ describe("dangerous command detection", () => {
     'git push origin "$(git branch --show-current || echo main)" --force',
     'git push origin "`git branch --show-current || echo main`" --force',
     "rm $(echo -rf) /tmp/example",
+    'printf "%s" "$(rm -- old.txt; rm -rf /tmp/example)"',
+    'printf "%s" "`rm -- old.txt; rm -rf /tmp/example`"',
     "`rm -rf /tmp/example`",
     "\\rm -rf /tmp/example",
     "rm -- old.txt\nrm -rf important",
