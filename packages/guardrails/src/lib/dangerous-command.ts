@@ -27,10 +27,11 @@ const DANGEROUS_PATTERNS: RegExp[] = [
 ];
 
 function normalizeCommand(command: string): string {
-  // Separators inside simple command substitutions are arguments, not outer shell boundaries.
-  const substitutionsFlattened = command.replace(/\$\(([^()]*)\)/g, (substitution) =>
-    substitution.replace(/[;&|]/g, " "),
-  );
+  // Flatten simple substitutions and escaped command names for bounded detection, not full shell parsing.
+  const substitutionsFlattened = command
+    .replace(/\$\(([^()]*)\)/g, (_match, contents: string) => ` ${contents.replace(/[;&|]/g, " ")} `)
+    .replace(/`([^`]*)`/g, (_match, contents: string) => ` ${contents.replace(/[;&|]/g, " ")} `)
+    .replace(/\\(?=(?:rm|sudo|git|chmod|chown|dd|mkfs|docker|kubectl)\b)/gi, "");
   return substitutionsFlattened.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
 }
 

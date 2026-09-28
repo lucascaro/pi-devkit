@@ -78,10 +78,11 @@ describe("subagent router model resolution", () => {
     expect(resolveRouterModel("router:low", cwd)).toBeUndefined();
   });
 
-  it("skips empty profiles when choosing the default profile", () => {
+  it("skips empty and invalid profiles when choosing the default profile", () => {
     writeConfig(join(agentDir, "model-router.json"), {
       profiles: {
         empty: {},
+        invalid: { low: { model: "not-a-model" } },
         usable: { low: { model: "openai/fast" } },
       },
     });
