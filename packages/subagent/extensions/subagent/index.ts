@@ -221,7 +221,8 @@ export default function subagentExtension(pi: ExtensionAPI): void {
   pi.registerCommand("subagent-list", {
     description: "List available subagents",
     handler: async (_args, ctx) => {
-      const discovery = await discoverAgents(ctx.cwd, "both", [BUNDLED_AGENTS_DIR]);
+      const scope: AgentScope = ctx.isProjectTrusted() ? "both" : "user";
+      const discovery = await discoverAgents(ctx.cwd, scope, [BUNDLED_AGENTS_DIR]);
       const { text, remaining } = formatAgentList(discovery.agents, 50);
       const line = remaining > 0 ? `${text} (+${remaining} more)` : text;
       ctx.ui.notify(`Subagents: ${line}`, "info");

@@ -1,5 +1,5 @@
 function hasRecursiveRm(command: string): boolean {
-  const rmCommands = command.matchAll(/(?:^|[\s;&|()])(?:[^\s;&|()]*\/)?rm\b([^;&|()]*)/gi);
+  const rmCommands = command.matchAll(/(?:^|[\s;&|()])(?:[^\s;&|()]*\/)?rm\b([^;&|()\r\n]*)/gi);
   for (const match of rmCommands) {
     const args = match[1]?.trim().split(/\s+/) ?? [];
     for (const arg of args) {
@@ -15,7 +15,7 @@ function hasRecursiveRm(command: string): boolean {
 const DANGEROUS_PATTERNS: RegExp[] = [
   /(^|[\s;&|()])(?:[^\s;&|()]*\/)?sudo\b/i,
   /(^|[\s;&|()])(?:[^\s;&|()]*\/)?git\s+reset\s+--hard\b/,
-  /(^|[\s;&|()])(?:[^\s;&|()]*\/)?git\s+push\b[^;&|()]*\s(?:-[A-Za-z]*f[A-Za-z]*\b|--force(?:-with-lease)?\b)/,
+  /(^|[\s;&|()])(?:[^\s;&|()]*\/)?git\s+push\b[^;&|\r\n]*\s(?:-[A-Za-z]*f[A-Za-z]*\b|--force(?:-with-lease)?\b)/,
   /(^|[\s;&|()])chmod\s+-R\s+777\b/,
   /(^|[\s;&|()])chown\s+-R\b/,
   /(^|[\s;&|()])dd\s+\b.*\bof=\/dev\//,
@@ -27,7 +27,7 @@ const DANGEROUS_PATTERNS: RegExp[] = [
 ];
 
 export function isDangerousCommand(command: string): boolean {
-  const normalized = command.replace(/\\\n/g, " ").replace(/\s+/g, " ").trim();
+  const normalized = command.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
   return hasRecursiveRm(normalized) || DANGEROUS_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 

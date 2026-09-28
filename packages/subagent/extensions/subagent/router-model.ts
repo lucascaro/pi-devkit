@@ -77,10 +77,11 @@ export function resolveRouterModel(ref: string, cwd: string, projectTrusted = fa
 
   const profile = asRecord(profiles[selectedProfileName]);
   const tier = asRecord(profile?.[tierName!]);
-  const configuredModel = typeof tier?.model === "string" ? tier.model : undefined;
+  const configuredModel = typeof tier?.model === "string" ? tier.model.trim() : "";
   if (!configuredModel) return undefined;
 
   const modelAliases = asRecord(config.models) ?? {};
   const alias = asRecord(modelAliases[configuredModel]);
-  return typeof alias?.model === "string" ? alias.model : configuredModel;
+  const aliasModel = typeof alias?.model === "string" ? alias.model.trim() : "";
+  return aliasModel || configuredModel;
 }

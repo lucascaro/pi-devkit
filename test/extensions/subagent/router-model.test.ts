@@ -69,6 +69,15 @@ describe("subagent router model resolution", () => {
     expect(resolveRouterModel("router:low", cwd, true)).toBe("openai/project-low");
   });
 
+  it("treats non-object profile and alias collections as missing config", () => {
+    writeConfig(join(agentDir, "model-router.json"), {
+      profiles: "not-an-object",
+      models: [],
+    });
+
+    expect(resolveRouterModel("router:low", cwd)).toBeUndefined();
+  });
+
   it("uses a configured model directly when it has no alias", () => {
     writeConfig(join(agentDir, "model-router.json"), {
       profiles: { default: { low: { model: "openai/direct" } } },
@@ -83,6 +92,15 @@ describe("subagent router model resolution", () => {
     writeFileSync(join(cwd, ".pi", "model-router.json"), "not json");
 
     expect(resolveRouterModel("router:low", cwd)).toBeUndefined();
+  });
+
+  it("trims tier model references and alias targets before resolution", () => {
+    writeConfig(join(agentDir, "model-router.json"), {
+      profiles: { default: { low: { model: " quick " } } },
+      models: { quick: { model: " openai/fast " } },
+    });
+
+    expect(resolveRouterModel("router:low", cwd)).toBe("openai/fast");
   });
 
   it("returns undefined for unknown tiers, profiles, or absent config", () => {

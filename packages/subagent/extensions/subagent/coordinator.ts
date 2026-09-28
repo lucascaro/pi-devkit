@@ -3,6 +3,7 @@
  * single, parallel, or chain mode.
  */
 
+import { resolve } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Model } from "@earendil-works/pi-ai";
 import { SDKBackend } from "./backends/sdk-backend.ts";
@@ -229,7 +230,7 @@ export class Coordinator {
       onUpdate: p.onUpdate ? (partial: AgentResult) => p.onUpdate!(partial, index) : undefined,
       parentModel: p.parentModel,
       parentThinkingLevel: p.parentThinkingLevel,
-      projectTrusted: p.projectTrusted,
+      projectTrusted: p.projectTrusted && resolve(cwd) === resolve(p.cwd),
     };
 
     try {

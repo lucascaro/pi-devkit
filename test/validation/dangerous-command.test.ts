@@ -7,6 +7,8 @@ describe("dangerous command detection", () => {
     "sudo make install",
     "git reset --hard HEAD~1",
     "git push origin main --force-with-lease",
+    'git push origin "$(git branch --show-current)" --force',
+    "rm -- old.txt\nrm -rf important",
     "rm -r -f /tmp/example",
     "rm --recursive /tmp/example",
     "true;rm -rf /tmp/example",
