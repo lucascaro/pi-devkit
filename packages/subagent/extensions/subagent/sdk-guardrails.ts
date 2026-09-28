@@ -30,8 +30,16 @@ const DANGEROUS_PATTERNS: RegExp[] = [
   /TRUNCATE\s+TABLE\b/i,
 ];
 
+function normalizeCommand(command: string): string {
+  // Separators inside simple command substitutions are arguments, not outer shell boundaries.
+  const substitutionsFlattened = command.replace(/\$\(([^()]*)\)/g, (substitution) =>
+    substitution.replace(/[;&|]/g, " "),
+  );
+  return substitutionsFlattened.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
+}
+
 export function isSubagentDangerousCommand(command: string): boolean {
-  const normalized = command.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
+  const normalized = normalizeCommand(command);
   return hasRecursiveRm(normalized) || DANGEROUS_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 

@@ -20,6 +20,25 @@ function readConfig(path: string): JsonRecord {
   }
 }
 
+function hasValidTier(profileValue: unknown, modelAliases: JsonRecord): boolean {
+  const profile = asRecord(profileValue);
+  if (!profile) return false;
+
+  return ROUTER_TIERS.some((tierName) => {
+    const tier = asRecord(profile[tierName]);
+    const model = typeof tier?.model === "string" ? tier.model.trim() : "";
+    if (!model) return false;
+
+    const alias = asRecord(modelAliases[model]);
+    const aliasModel = typeof alias?.model === "string" ? alias.model.trim() : "";
+    const resolvedModel = aliasModel || model;
+    const separator = resolvedModel.indexOf("/");
+    return separator > 0
+      && resolvedModel.slice(0, separator).trim().length > 0
+      && resolvedModel.slice(separator + 1).trim().length > 0;
+  });
+}
+
 function mergeRouterConfig(globalConfig: JsonRecord, projectConfig: JsonRecord): JsonRecord {
   const globalProfiles = asRecord(globalConfig.profiles) ?? {};
   const projectProfiles = asRecord(projectConfig.profiles) ?? {};
@@ -72,15 +91,16 @@ export function resolveRouterModel(ref: string, cwd: string, projectTrusted = fa
     projectTrusted ? readConfig(join(cwd, ".pi", "model-router.json")) : {},
   );
   const profiles = asRecord(config.profiles) ?? {};
-  const selectedProfileName = profileName ?? Object.keys(profiles)[0];
+  const modelAliases = asRecord(config.models) ?? {};
+  const selectedProfileName = profileName ?? Object.entries(profiles).find(([, profile]) =>
+    hasValidTier(profile, modelAliases),
+  )?.[0];
   if (!selectedProfileName) return undefined;
 
   const profile = asRecord(profiles[selectedProfileName]);
   const tier = asRecord(profile?.[tierName!]);
   const configuredModel = typeof tier?.model === "string" ? tier.model.trim() : "";
   if (!configuredModel) return undefined;
-
-  const modelAliases = asRecord(config.models) ?? {};
   const alias = asRecord(modelAliases[configuredModel]);
   const aliasModel = typeof alias?.model === "string" ? alias.model.trim() : "";
   return aliasModel || configuredModel;

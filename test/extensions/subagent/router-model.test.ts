@@ -78,6 +78,17 @@ describe("subagent router model resolution", () => {
     expect(resolveRouterModel("router:low", cwd)).toBeUndefined();
   });
 
+  it("skips empty profiles when choosing the default profile", () => {
+    writeConfig(join(agentDir, "model-router.json"), {
+      profiles: {
+        empty: {},
+        usable: { low: { model: "openai/fast" } },
+      },
+    });
+
+    expect(resolveRouterModel("router:low", cwd)).toBe("openai/fast");
+  });
+
   it("uses a configured model directly when it has no alias", () => {
     writeConfig(join(agentDir, "model-router.json"), {
       profiles: { default: { low: { model: "openai/direct" } } },

@@ -12,6 +12,7 @@ const dangerousCommands = [
   "git reset --hard HEAD~1",
   "git push origin main --force-with-lease",
   'git push origin "$(git branch --show-current)" --force',
+  'git push origin "$(git branch --show-current || echo main)" --force',
   "rm -- old.txt\nrm -rf important",
   "rm -r -f /tmp/example",
   "rm --recursive /tmp/example",
