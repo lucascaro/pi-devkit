@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '[ -x \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-refresh.sh\" ] || exit 0; exec \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-refresh.sh\"'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '[ -x \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-nudge.sh\" ] || exit 0; exec \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-nudge.sh\" search'"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '[ -x \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-nudge.sh\" ] || exit 0; exec \"$CLAUDE_PROJECT_DIR/graphify-out/graphify-nudge.sh\" read'"
+          }
+        ]
+      }
+    ]
+  }
+}

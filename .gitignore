@@ -6,5 +6,16 @@ coverage/
 .pi/npm/
 .pi/git/
 
+# Per-repo Claude settings and backup (e.g. hivesmith telemetry)
+.claude/settings.local.json
+.claude/settings.local.json.bak
+.claude/settings.json.graphify-bak
+
 # hive worktrees
 .worktrees
+
+# graphify build artifacts (added by /graphify-init). The PostToolUse hook
+# in .claude/settings.json executes graphify-out/graphify-refresh.sh, so this
+# directory MUST stay untracked — a tracked hook target is a payload any PR
+# could change.
+graphify-out/
