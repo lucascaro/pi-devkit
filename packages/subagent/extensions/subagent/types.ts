@@ -201,7 +201,7 @@ export const SubagentParamsSchema = Type.Object({
   maxTasks: Type.Optional(Type.Number({ description: "Max parallel tasks (default 8)", minimum: 1, maximum: 32 })),
   concurrency: Type.Optional(Type.Number({ description: "Max concurrent tasks (default 4)", minimum: 1, maximum: 16 })),
   maxOutputPerTask: Type.Optional(
-    Type.Number({ description: "Max output bytes per task in model-visible content (default 51200)" }),
+    Type.Number({ description: "Max output bytes per task in model-visible content (default 51200)", minimum: 0, multipleOf: 1 }),
   ),
 });
 

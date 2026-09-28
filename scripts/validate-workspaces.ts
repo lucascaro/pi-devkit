@@ -40,7 +40,6 @@ const packageDirs = readdirSync(packageRoot)
 const packageNames = new Set<string>();
 
 for (const dir of packageDirs) {
-  const relativeDir = relative(packageRoot, dir);
   const manifestPath = join(dir, "package.json");
   if (!existsSync(manifestPath)) {
     errors.push(`${dir}: missing package.json`);

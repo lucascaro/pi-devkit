@@ -18,6 +18,7 @@ import { discoverAgents, formatAgentList } from "./agents.ts";
 import { Coordinator } from "./coordinator.ts";
 import { renderSubagentCall } from "./render.ts";
 import { renderSubagentResult, type SubagentDetails } from "./render-result.ts";
+import { truncateOutput } from "./output.ts";
 import type {
   AgentDefinition,
   AgentResult,
@@ -235,14 +236,4 @@ function getResultOutput(result: AgentResult): string {
     return result.errorMessage || getFinalOutput(result.messages) || "(no output)";
   }
   return getFinalOutput(result.messages) || "(no output)";
-}
-
-function truncateOutput(output: string, maxBytes: number): string {
-  const byteLength = Buffer.byteLength(output, "utf8");
-  if (byteLength <= maxBytes) return output;
-  let truncated = output.slice(0, maxBytes);
-  while (Buffer.byteLength(truncated, "utf8") > maxBytes) {
-    truncated = truncated.slice(0, -1);
-  }
-  return `${truncated}\n\n[Output truncated: ${byteLength - Buffer.byteLength(truncated, "utf8")} bytes omitted. Full output preserved in tool details.]`;
 }
