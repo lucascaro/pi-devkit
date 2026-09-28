@@ -34,11 +34,21 @@ jobs:
           echo "::error::Set confirm_publish=true to approve publishing the selected plugin."
           exit 1
 
+  require-trusted-ref:
+    if: ${{ inputs.confirm_publish && github.ref != 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Publish only from refs/heads/main."
+          exit 1
+
   validate:
-    if: ${{ inputs.confirm_publish }}
+    if: ${{ inputs.confirm_publish && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -65,7 +75,7 @@ jobs:
           NODE
 
   publish:
-    if: ${{ inputs.confirm_publish }}
+    if: ${{ inputs.confirm_publish && github.ref == 'refs/heads/main' }}
     needs: validate
     runs-on: ubuntu-latest
     environment:
@@ -75,6 +85,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version: 24

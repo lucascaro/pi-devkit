@@ -10,7 +10,12 @@ describe("standalone plugin publish workflow", () => {
     expect(triggerSection).not.toMatch(/^  (push|pull_request):/m);
     expect(triggerSection).toMatch(/confirm_publish:[\s\S]*?default: false/);
     expect(workflow).toContain("if: ${{ !inputs.confirm_publish }}");
-    expect([...workflow.matchAll(/if: \$\{\{ inputs\.confirm_publish \}\}/g)]).toHaveLength(2);
+    expect([...workflow.matchAll(/if: \$\{\{ inputs\.confirm_publish && github\.ref == 'refs\/heads\/main' \}\}/g)]).toHaveLength(2);
+  });
+
+  it("fails closed on non-main refs and checks out the validated event SHA", () => {
+    expect(workflow).toMatch(/require-trusted-ref:[\s\S]*?github\.ref != 'refs\/heads\/main'/);
+    expect([...workflow.matchAll(/ref: \$\{\{ github\.sha \}\}/g)]).toHaveLength(2);
   });
 
   it("limits publication to approved public workspaces and the protected npm environment", () => {
