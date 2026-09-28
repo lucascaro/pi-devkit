@@ -7,6 +7,7 @@ describe("dangerous command detection", () => {
     "sudo make install",
     "git reset --hard HEAD~1",
     "git push origin main --force-with-lease",
+    'git push origin "feature;foo" --force',
     'git push origin "$(git branch --show-current)" --force',
     'git push origin "$(git branch --show-current || echo main)" --force',
     'git push origin "`git branch --show-current || echo main`" --force',
@@ -32,6 +33,7 @@ describe("dangerous command detection", () => {
     "rm file.txt",
     "rm -f file.txt",
     "git status",
+    'git push origin "feature;foo"',
     "npm test",
     "kubectl get pods",
     "psql -c 'select * from users limit 1'"
