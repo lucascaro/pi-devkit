@@ -3,16 +3,21 @@ import { truncateOutput } from "../../../packages/subagent/extensions/subagent/o
 import { SubagentParamsSchema } from "../../../packages/subagent/extensions/subagent/types.ts";
 
 describe("truncateOutput", () => {
-  it("safely clamps a negative byte limit", () => {
-    expect(truncateOutput("hello", -1)).toBe(
-      "\n\n[Output truncated: 5 bytes omitted. Full output preserved in tool details.]",
-    );
+  it("clamps a negative byte limit safely", () => {
+    expect(truncateOutput("hello", -1)).toBe("");
   });
 
-  it("does not split a multibyte UTF-8 character", () => {
-    const truncated = truncateOutput("💻x", 3);
-    expect(truncated).not.toContain("�");
-    expect(truncated).toContain("5 bytes omitted.");
+  it("keeps the complete result, including its marker, within the byte limit", () => {
+    const truncated = truncateOutput("x".repeat(500), 100);
+    expect(Buffer.byteLength(truncated, "utf8")).toBeLessThanOrEqual(100);
+    expect(truncated).toContain("bytes omitted.");
+  });
+
+  it("does not split multibyte UTF-8 characters or exceed the byte limit", () => {
+    const truncated = truncateOutput("💻x".repeat(80), 100);
+    const content = truncated.split("\n\n[Output truncated:")[0] ?? "";
+    expect(Buffer.byteLength(truncated, "utf8")).toBeLessThanOrEqual(100);
+    expect(content).not.toContain("�");
   });
 
   it("returns output that fits within the byte limit unchanged", () => {
