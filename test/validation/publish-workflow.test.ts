@@ -37,13 +37,19 @@ describe("standalone plugin publish workflow", () => {
     const publishJob = workflow.match(/^  publish:[\s\S]*$/m)?.[0] ?? "";
 
     expect(validateJob).toContain('npm pack --workspace "$PACKAGE_NAME" --pack-destination "$PACK_DIR" --json');
-    expect(validateJob).toContain("actions/upload-artifact@v4");
+    expect(validateJob).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02");
     expect(validateJob).toContain("packedPaths");
     expect(validateJob).not.toContain("NPM_TOKEN");
-    expect(publishJob).toContain("actions/download-artifact@v4");
+    expect(publishJob).toContain("actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093");
     expect(publishJob).not.toContain("actions/checkout@");
     expect(publishJob).toContain('npm publish "$TARBALL_PATH" --access public --provenance --ignore-scripts');
     expect([...publishJob.matchAll(/NODE_AUTH_TOKEN:\s+\$\{\{ secrets\.NPM_TOKEN \}\}/g)]).toHaveLength(1);
+  });
+
+  it("pins all actions to immutable commit SHAs", () => {
+    const actionRefs = [...workflow.matchAll(/^\s+(?:- )?uses: (actions\/[^@\s]+)@([a-f0-9]{40})(?:\s+# v[\w.-]+)?$/gm)];
+    expect(actionRefs).toHaveLength(5);
+    expect(workflow).not.toMatch(/^\s+(?:- )?uses: actions\/[^@\s]+@v\d/m);
   });
 
   it("skips an already-published version before exposing the publish token", () => {
