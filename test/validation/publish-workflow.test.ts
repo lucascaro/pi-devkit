@@ -38,6 +38,7 @@ describe("standalone plugin publish workflow", () => {
 
     expect(validateJob).toContain('npm pack --workspace "$PACKAGE_NAME" --pack-destination "$PACK_DIR" --json');
     expect(validateJob).toContain("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02");
+    expect(validateJob).toMatch(/persist-credentials: false/);
     expect(validateJob).toContain("packedPaths");
     expect(validateJob).not.toContain("NPM_TOKEN");
     expect(publishJob).toContain("actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093");
