@@ -27,13 +27,13 @@ const DANGEROUS_PATTERNS: RegExp[] = [
 ];
 
 function normalizeCommand(command: string): string {
-  // Normalize common shell quoting forms for bounded detection, not full shell parsing.
+  // Normalize separators inside common quotes/substitutions; leave outer newlines as command boundaries.
   const quotedSeparatorsFlattened = command
-    .replace(/"((?:\\.|[^"\\])*)"/g, (_match, contents: string) => `"${contents.replace(/[;&|]/g, " ")}"`)
-    .replace(/'([^']*)'/g, (_match, contents: string) => `'${contents.replace(/[;&|]/g, " ")}'`);
+    .replace(/"((?:\\.|[^"\\])*)"/g, (_match, contents: string) => `"${contents.replace(/[;&|\r\n]/g, " ")}"`)
+    .replace(/'([^']*)'/g, (_match, contents: string) => `'${contents.replace(/[;&|\r\n]/g, " ")}'`);
   const substitutionsFlattened = quotedSeparatorsFlattened
-    .replace(/\$\(([^()]*)\)/g, (_match, contents: string) => ` ${contents.replace(/[;&|]/g, " ")} `)
-    .replace(/`([^`]*)`/g, (_match, contents: string) => ` ${contents.replace(/[;&|]/g, " ")} `)
+    .replace(/\$\(([^()]*)\)/g, (_match, contents: string) => ` ${contents.replace(/[;&|\r\n]/g, " ")} `)
+    .replace(/`([^`]*)`/g, (_match, contents: string) => ` ${contents.replace(/[;&|\r\n]/g, " ")} `)
     .replace(/\\(?=(?:rm|sudo|git|chmod|chown|dd|mkfs|docker|kubectl)\b)/gi, "");
   return substitutionsFlattened.replace(/\\\n/g, " ").replace(/[ \t\r]+/g, " ").trim();
 }

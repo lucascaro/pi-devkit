@@ -8,6 +8,8 @@ describe("dangerous command detection", () => {
     "git reset --hard HEAD~1",
     "git push origin main --force-with-lease",
     'git push origin "feature;foo" --force',
+    'git push origin "$(\nprintf %s main\n)" --force',
+    'git push origin "`\nprintf %s main\n`" --force',
     'git push origin "$(git branch --show-current)" --force',
     'git push origin "$(git branch --show-current || echo main)" --force',
     'git push origin "`git branch --show-current || echo main`" --force',
@@ -34,6 +36,7 @@ describe("dangerous command detection", () => {
     "rm -f file.txt",
     "git status",
     'git push origin "feature;foo"',
+    "git push origin main\nprintf %s --force",
     "npm test",
     "kubectl get pods",
     "psql -c 'select * from users limit 1'"
