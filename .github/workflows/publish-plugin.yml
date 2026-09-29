@@ -45,6 +45,10 @@ jobs:
   validate:
     if: ${{ inputs.confirm_publish && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
+    outputs:
+      package_name: ${{ steps.pack.outputs.package_name }}
+      package_version: ${{ steps.pack.outputs.package_version }}
+      tarball: ${{ steps.pack.outputs.tarball }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -54,7 +58,8 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run check
-      - name: Validate selected package is public
+      - name: Pack and validate selected public package
+        id: pack
         env:
           PLUGIN: ${{ inputs.plugin }}
         run: |
@@ -62,17 +67,57 @@ jobs:
             guardrails|input-bell|model-router|subagent) PACKAGE_DIR="packages/$PLUGIN" ;;
             *) echo "::error::Unsupported plugin: $PLUGIN"; exit 1 ;;
           esac
-          node --input-type=module - "$PACKAGE_DIR" <<'NODE'
-          import { readFileSync } from "node:fs";
-          import { resolve } from "node:path";
+          PACKAGE_NAME=$(node -p "JSON.parse(require('fs').readFileSync('$PACKAGE_DIR/package.json', 'utf8')).name")
+          PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('$PACKAGE_DIR/package.json', 'utf8')).version")
+          EXPECTED_NAME="@lucascaro/pi-$PLUGIN"
+          PACK_DIR="$RUNNER_TEMP/plugin-artifact"
+          mkdir -p "$PACK_DIR"
+          npm pack --workspace "$PACKAGE_NAME" --pack-destination "$PACK_DIR" --json > "$PACK_DIR/pack-result.json"
+          node --input-type=module - "$PACKAGE_DIR" "$PACK_DIR" "$EXPECTED_NAME" "$PACKAGE_VERSION" "$GITHUB_OUTPUT" <<'NODE'
+          import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join, resolve } from "node:path";
 
-          const packageDir = resolve(process.argv[2]);
-          const manifest = JSON.parse(readFileSync(resolve(packageDir, "package.json"), "utf8"));
-          const expectedName = `@lucascaro/pi-${process.env.PLUGIN}`;
+          const [packageDirArg, packDirArg, expectedName, expectedVersion, outputPath] = process.argv.slice(2);
+          const packageDir = resolve(packageDirArg);
+          const packDir = resolve(packDirArg);
+          const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
           if (manifest.private === true) throw new Error(`${manifest.name} is private`);
           if (manifest.name !== expectedName) throw new Error(`Expected ${expectedName}, found ${manifest.name}`);
-          console.log(`Validated ${manifest.name}@${manifest.version}`);
+
+          const packOutput = JSON.parse(readFileSync(join(packDir, "pack-result.json"), "utf8"));
+          const pack = Array.isArray(packOutput) ? packOutput[0] : undefined;
+          if (!pack || pack.name !== manifest.name || pack.version !== expectedVersion) {
+            throw new Error("npm pack result does not match the selected package manifest");
+          }
+          const packedPaths = (pack.files ?? []).map((file) => file.path);
+          for (const requiredFile of ["package.json", "README.md", "LICENSE"]) {
+            if (!packedPaths.includes(requiredFile)) throw new Error(`Packed artifact is missing ${requiredFile}`);
+          }
+          for (const declaredPath of Object.values(manifest.pi ?? {}).flat()) {
+            const resourceRoot = declaredPath.replace(/^\.\//, "").replace(/\/$/, "");
+            if (!packedPaths.some((path) => path.startsWith(`${resourceRoot}/`))) {
+              throw new Error(`Packed artifact is missing Pi resource ${declaredPath}`);
+            }
+          }
+          for (const extensionPath of manifest.pi?.extensions ?? []) {
+            const prefix = `${extensionPath.replace(/^\.\//, "").replace(/\/$/, "")}/`;
+            if (!packedPaths.some((path) => path.startsWith(prefix) && path.endsWith("/index.ts"))) {
+              throw new Error(`Packed artifact has no index.ts for ${extensionPath}`);
+            }
+          }
+
+          const tarball = pack.filename ?? readdirSync(packDir).find((file) => file.endsWith(".tgz"));
+          if (!tarball || !existsSync(join(packDir, tarball))) throw new Error("Packed tarball was not created");
+          writeFileSync(outputPath, `package_name=${manifest.name}\npackage_version=${manifest.version}\ntarball=${tarball}\n`, { flag: "a" });
+          console.log(`Validated ${manifest.name}@${manifest.version} in ${tarball}`);
           NODE
+      - name: Upload validated package tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-${{ inputs.plugin }}
+          path: ${{ runner.temp }}/plugin-artifact/${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 1
 
   publish:
     if: ${{ inputs.confirm_publish && github.ref == 'refs/heads/main' }}
@@ -84,31 +129,41 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      - name: Publish selected workspace
+      - uses: actions/download-artifact@v4
+        with:
+          name: plugin-${{ inputs.plugin }}
+          path: ${{ runner.temp }}/plugin-artifact
+      - name: Check if exact version is already published
+        id: registry-check
         env:
-          PLUGIN: ${{ inputs.plugin }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE_NAME: ${{ needs.validate.outputs.package_name }}
+          PACKAGE_VERSION: ${{ needs.validate.outputs.package_version }}
         run: |
-          case "$PLUGIN" in
-            guardrails|input-bell|model-router|subagent) PACKAGE_DIR="packages/$PLUGIN" ;;
-            *) echo "::error::Unsupported plugin: $PLUGIN"; exit 1 ;;
-          esac
-          cd "$PACKAGE_DIR"
-          PACKAGE_NAME=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).name")
-          PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
           if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --silent >/dev/null 2>&1; then
             echo "$PACKAGE_NAME@$PACKAGE_VERSION is already published; skipping."
-            exit 0
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish validated package tarball
+        if: steps.registry-check.outputs.already_published != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE_NAME: ${{ needs.validate.outputs.package_name }}
+          PACKAGE_VERSION: ${{ needs.validate.outputs.package_version }}
+          TARBALL: ${{ needs.validate.outputs.tarball }}
+        run: |
+          TARBALL_PATH="$RUNNER_TEMP/plugin-artifact/$TARBALL"
+          if [ ! -f "$TARBALL_PATH" ]; then
+            echo "::error::Validated tarball is missing: $TARBALL_PATH"
+            exit 1
           fi
           if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
             echo "::error::Configure NPM_TOKEN in the npm-publish environment."
             exit 1
           fi
-          npm publish --access public --provenance
+          npm publish "$TARBALL_PATH" --access public --provenance --ignore-scripts

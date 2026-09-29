@@ -15,7 +15,7 @@ describe("standalone plugin publish workflow", () => {
 
   it("fails closed on non-main refs and checks out the validated event SHA", () => {
     expect(workflow).toMatch(/require-trusted-ref:[\s\S]*?github\.ref != 'refs\/heads\/main'/);
-    expect([...workflow.matchAll(/ref: \$\{\{ github\.sha \}\}/g)]).toHaveLength(2);
+    expect([...workflow.matchAll(/ref: \$\{\{ github\.sha \}\}/g)]).toHaveLength(1);
   });
 
   it("limits publication to approved public workspaces and the protected npm environment", () => {
@@ -26,18 +26,32 @@ describe("standalone plugin publish workflow", () => {
       "model-router",
       "subagent",
     ]);
-    expect([...workflow.matchAll(/guardrails\|input-bell\|model-router\|subagent/g)]).toHaveLength(2);
+    expect([...workflow.matchAll(/guardrails\|input-bell\|model-router\|subagent/g)]).toHaveLength(1);
     expect(workflow).toMatch(/environment:\n\s+name: npm-publish/);
     expect(workflow).toMatch(/NODE_AUTH_TOKEN:\s+\$\{\{ secrets\.NPM_TOKEN \}\}/);
-    expect(workflow).toContain("npm publish --access public --provenance");
+    expect(workflow).toContain('npm publish "$TARBALL_PATH" --access public --provenance --ignore-scripts');
   });
 
-  it("skips an already-published version before requiring the publish token", () => {
+  it("publishes the exact validated tarball without checking out source in the token job", () => {
+    const validateJob = workflow.match(/^  validate:[\s\S]*?^  publish:/m)?.[0] ?? "";
+    const publishJob = workflow.match(/^  publish:[\s\S]*$/m)?.[0] ?? "";
+
+    expect(validateJob).toContain('npm pack --workspace "$PACKAGE_NAME" --pack-destination "$PACK_DIR" --json');
+    expect(validateJob).toContain("actions/upload-artifact@v4");
+    expect(validateJob).toContain("packedPaths");
+    expect(validateJob).not.toContain("NPM_TOKEN");
+    expect(publishJob).toContain("actions/download-artifact@v4");
+    expect(publishJob).not.toContain("actions/checkout@");
+    expect(publishJob).toContain('npm publish "$TARBALL_PATH" --access public --provenance --ignore-scripts');
+    expect([...publishJob.matchAll(/NODE_AUTH_TOKEN:\s+\$\{\{ secrets\.NPM_TOKEN \}\}/g)]).toHaveLength(1);
+  });
+
+  it("skips an already-published version before exposing the publish token", () => {
     const registryCheck = 'npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --silent';
-    const tokenCheck = 'if [ -z "${NODE_AUTH_TOKEN:-}" ]';
+    const tokenEnv = 'NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}';
 
     expect(workflow).toContain(registryCheck);
     expect(workflow).toContain('is already published; skipping.');
-    expect(workflow.indexOf(registryCheck)).toBeLessThan(workflow.indexOf(tokenCheck));
+    expect(workflow.indexOf(registryCheck)).toBeLessThan(workflow.indexOf(tokenEnv));
   });
 });
