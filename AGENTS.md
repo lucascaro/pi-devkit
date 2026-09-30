@@ -138,8 +138,8 @@ The legacy `features/` layout is read with one-release fallback; new work lands 
 
 **Build / test / lint commands** — `/hs-feature-implement` expects all of these to pass before opening a PR:
 
-- **Build:** `<command>`
-- **Lint:** `<command>`
-- **Tests:** `<command>`
-- **Everything:** `<single command that runs all of the above>`
+- **Build:** `npm run typecheck`
+- **Lint:** `npm run validate`
+- **Tests:** `npm run test`
+- **Everything:** `npm run check`
 <!-- END HIVESMITH -->
