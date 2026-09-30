@@ -14,6 +14,6 @@
   "files": ["extensions", "src", "README.md", "LICENSE"],
   "pi": { "extensions": ["./extensions"] },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.84.4"
+    "@earendil-works/pi-coding-agent": ">=0.99.1"
   }
 }
