@@ -76,7 +76,7 @@ All of these must pass before a PR merges. `/hs-feature-implement` runs them.
 
 This project uses [hivesmith](https://github.com/lucascaro/hivesmith) skills:
 
-- **Feature pipeline** — `/hs-feature-next` → (`/hs-feature-new` or `/hs-feature-ingest <#>`) → `/hs-feature-triage` → `/hs-feature-research` → `/hs-feature-plan` → `/hs-feature-implement` → `/hs-review-loop`
+- **Feature pipeline** — see the canonical hivesmith workflow block below for the full pipeline and current stage skills.
 - **PR convergence** — `/hs-review-loop` drives review-respond-iterate on any PR until findings clear or it escalates.
 - **Doc gardening** — `/hs-doc-garden` scans `docs/` for staleness and opens fix-up PRs.
 - **Golden-principle GC** — `/hs-gc-sweep` reads `golden-principles.md` and opens small refactor PRs for deviations.
