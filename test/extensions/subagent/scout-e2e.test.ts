@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
 import { resolveRouterModel } from "../../../extensions/subagent/backends/sdk-backend.ts";
 import { discoverAgents } from "../../../extensions/subagent/agents.ts";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 
 const BUNDLED_AGENTS_DIR = path.join(
@@ -10,6 +11,35 @@ const BUNDLED_AGENTS_DIR = path.join(
 );
 
 describe("scout subagent end-to-end", () => {
+  let tempRoot: string;
+  let projectDir: string;
+  let previousAgentDir: string | undefined;
+
+  beforeEach(() => {
+    previousAgentDir = process.env.PI_CODING_AGENT_DIR;
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "scout-router-test-"));
+    const agentDir = path.join(tempRoot, "agent");
+    projectDir = path.join(tempRoot, "project");
+    fs.mkdirSync(agentDir, { recursive: true });
+    fs.mkdirSync(path.join(projectDir, ".pi"), { recursive: true });
+    fs.copyFileSync(
+      path.join(
+        import.meta.dirname,
+        "../../../extensions/model-router/model-router.example.json",
+      ),
+      path.join(projectDir, ".pi", "model-router.json"),
+    );
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+  });
+
+  afterEach(() => {
+    if (previousAgentDir === undefined) {
+      delete process.env.PI_CODING_AGENT_DIR;
+    } else {
+      process.env.PI_CODING_AGENT_DIR = previousAgentDir;
+    }
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
   it("resolves scout's router:low to a real model", async () => {
     const scoutPath = path.join(BUNDLED_AGENTS_DIR, "scout.md");
     const { parseFrontmatter } = await import(
@@ -21,7 +51,7 @@ describe("scout subagent end-to-end", () => {
   });
 
   it("resolves scout's router:low against the router config", async () => {
-    const resolved = await resolveRouterModel("router:low", process.cwd());
+    const resolved = await resolveRouterModel("router:low", projectDir);
     // Should resolve to the first profile's low tier model
     expect(resolved).toBeDefined();
     expect(typeof resolved).toBe("string");
@@ -30,7 +60,7 @@ describe("scout subagent end-to-end", () => {
 
   it("discovers scout agent with router:low model", async () => {
     const discovery = await discoverAgents(
-      process.cwd(),
+      projectDir,
       "user",
       [BUNDLED_AGENTS_DIR],
     );
