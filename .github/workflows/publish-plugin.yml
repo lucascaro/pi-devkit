@@ -134,6 +134,9 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Check npm trusted-publishing support
+        run: |
+          node -e 'const [major, minor, patch] = require("node:child_process").execFileSync("npm", ["--version"], { encoding: "utf8" }).trim().split(".").map(Number); if (major < 11 || (major === 11 && (minor < 5 || (minor === 5 && patch < 1)))) throw new Error("npm >=11.5.1 is required for trusted publishing");'
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: plugin-${{ inputs.plugin }}
@@ -150,10 +153,9 @@ jobs:
           else
             echo "already_published=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Publish validated package tarball
+      - name: Publish validated package tarball with trusted publishing
         if: steps.registry-check.outputs.already_published != 'true'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PACKAGE_NAME: ${{ needs.validate.outputs.package_name }}
           PACKAGE_VERSION: ${{ needs.validate.outputs.package_version }}
           TARBALL: ${{ needs.validate.outputs.tarball }}
@@ -163,8 +165,4 @@ jobs:
             echo "::error::Validated tarball is missing: $TARBALL_PATH"
             exit 1
           fi
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::Configure NPM_TOKEN in the npm-publish environment."
-            exit 1
-          fi
-          npm publish "$TARBALL_PATH" --access public --provenance --ignore-scripts
+          npm publish "$TARBALL_PATH" --access public --ignore-scripts
