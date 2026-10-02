@@ -15,14 +15,48 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - name: Reject tracked Graphify output
+      - name: Verify Graphify hook safeguards
         run: |
-          tracked="$(git ls-files -- graphify-out/)"
-          if [ -n "$tracked" ]; then
-            echo "::error::graphify-out/ is generated output and must not be tracked:"
-            printf '%s\n' "$tracked"
-            exit 1
-          fi
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          tracked_paths = subprocess.check_output(["git", "ls-files", "-z"]).split(b"\0")
+          graphify_paths = [
+              path for path in tracked_paths
+              if path == b"graphify-out" or path.startswith(b"graphify-out/")
+          ]
+          if graphify_paths:
+              print("::error::Graphify output must not be tracked:")
+              for path in graphify_paths:
+                  print("  " + path.decode("utf-8", errors="replace"))
+              raise SystemExit(1)
+
+          settings = json.loads(Path(".claude/settings.json").read_text())
+          expected_hooks = [
+              ("PostToolUse", "Edit|Write|MultiEdit", "graphify-refresh.sh"),
+              ("PreToolUse", "Bash|Grep", "graphify-nudge.sh"),
+              ("PreToolUse", "Read|Glob", "graphify-nudge.sh"),
+          ]
+          for event, matcher, script in expected_hooks:
+              entries = [
+                  entry for entry in settings.get("hooks", {}).get(event, [])
+                  if entry.get("matcher") == matcher
+              ]
+              if len(entries) != 1:
+                  raise SystemExit(f"::error::Expected one {event}/{matcher} hook")
+              commands = [hook.get("command", "") for hook in entries[0].get("hooks", [])]
+              if len(commands) != 1:
+                  raise SystemExit(f"::error::Expected one command for {event}/{matcher}")
+              command = commands[0]
+              if (
+                  f"graphify-out/{script}" not in command
+                  or "rev-parse --is-inside-work-tree" not in command
+                  or "ls-files --error-unmatch -- graphify-out" not in command
+              ):
+                  raise SystemExit(f"::error::Missing tracked-path guard for {event}/{matcher}")
+          PY
       - name: Verify catalog is up to date
         run: |
           npx tsx scripts/generate-catalog.ts > /tmp/catalog.md
