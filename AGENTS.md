@@ -64,11 +64,10 @@ All of these must pass before a PR merges. `/hs-feature-implement` runs them.
 
 ## Module Map
 
-- `extensions/` — Pi extensions: `ambiguity-detection`, `anti-people-pleasing`, `guardrails`, `hello`, `input-bell`, `model-router`
-- `skills/` — Pi skills: `pi-package-author`
-- `prompts/` — prompt templates: `plan.md`, `review.md`
-- `themes/` — TUI themes
-- `src/lib/` — shared TS library code (e.g. `dangerous-command.ts`)
+- `packages/` — npm workspaces for Pi extensions, each with its own package manifest and resources
+- `skills/` — shared Pi skills: `pi-package-author`
+- `prompts/` — shared prompt templates: `plan.md`, `review.md`
+- `themes/` — shared TUI themes
 - `scripts/` — tsx validation + catalog-generation scripts
 - `test/` — vitest tests (`extensions/`, `validation/`)
 

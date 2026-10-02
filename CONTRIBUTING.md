@@ -2,13 +2,11 @@
 
 ## Setup
 
-<Clone, install dependencies, run locally.>
-
-```
-git clone <repo>
-cd <project>
-<install command>
-<run command>
+```bash
+git clone git@github.com:lucascaro/pi-devkit.git
+cd pi-devkit
+npm ci
+npm run check
 ```
 
 ## Build / Test / Lint
@@ -39,6 +37,12 @@ Specs live under `docs/product-specs/<NNN>-<slug>.md` with YAML frontmatter (`st
 - [ ] `AGENTS.md` updated if module map or conventions changed
 - [ ] Relevant docs updated (`README.md`, `docs/`)
 - [ ] PR description references the issue (`Fixes #<number>`)
+
+## Workspace package changes
+
+Each extension workspace under `packages/` is independently installable. Keep runtime code and required assets inside its workspace, declare imported Pi APIs as peer dependencies, and update its `files` and `pi` fields together. The root package manifest must continue to aggregate every extension and shared resource.
+
+Before publishing a workspace, verify its npm name is available, run `npm run check`, inspect `npm pack --workspace <package-name> --dry-run`, and test installation in an isolated Pi configuration. Publish only the intended workspace with `npm publish --workspace <package-name> --access public`; never publish the private `hello` example. Do not install the umbrella and the same standalone plugin together unless the umbrella resource is filtered to prevent duplicate loading.
 
 ## Design Guidelines
 

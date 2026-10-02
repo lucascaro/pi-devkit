@@ -1,0 +1,22 @@
+{
+  "name": "@lucascaro/pi-model-router",
+  "version": "0.1.0",
+  "description": "Intelligent per-turn model routing with configurable profiles.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucascaro/pi-devkit.git",
+    "directory": "packages/model-router"
+  },
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "keywords": ["pi-package", "pi", "coding-agent", "model-routing"],
+  "files": ["extensions", "README.md", "LICENSE"],
+  "pi": { "extensions": ["./extensions"] },
+  "peerDependencies": {
+    "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": ">=0.99.1",
+    "@earendil-works/pi-tui": "*"
+  }
+}

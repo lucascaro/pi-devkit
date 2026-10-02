@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { discoverAgents, findNearestProjectAgentsDir } from "../../../extensions/subagent/agents.ts";
+import { discoverAgents, findNearestProjectAgentsDir } from "../../../packages/subagent/extensions/subagent/agents.ts";
 
 let tmpRoot: string;
 let userAgentDir: string; // $PI_CODING_AGENT_DIR

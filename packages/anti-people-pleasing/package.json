@@ -1,0 +1,15 @@
+{
+  "name": "@lucascaro/pi-anti-people-pleasing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reduce people-pleasing behavior and encourage direct responses.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "keywords": ["pi-package", "pi", "coding-agent"],
+  "files": ["extensions", "README.md", "LICENSE"],
+  "pi": { "extensions": ["./extensions"] },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.84.4"
+  }
+}

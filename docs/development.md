@@ -10,9 +10,10 @@ pi install ./
 
 ## Resource conventions
 
-- Extensions live in `extensions/<name>/index.ts`.
-- Shared code lives in `src/lib`.
-- Skills live in `skills/<name>/SKILL.md`.
+- Each extension workspace lives in `packages/<name>/` and declares its own Pi manifest. Extension entrypoints are under `packages/<name>/extensions/<name>/index.ts`.
+- Keep code/assets required by a standalone plugin inside that workspace. Shared helper code with one consumer belongs to that plugin; introduce a shared package only when there are multiple real consumers.
+- The root `package.json` is the batteries-included Pi package and aggregates workspace resource paths.
+- Shared skills live in `skills/<name>/SKILL.md`.
 - Prompts live directly under `prompts/*.md`.
 - Themes live directly under `themes/*.json` and must include every Pi color token.
 - Custom models are configured in `~/.pi/agent/models.json` (user-level, not repo-level).
@@ -33,6 +34,8 @@ npm run validate:prompts
 npm run validate:themes
 npm run validate:extensions
 npm run validate:pi-manifest
+npm run validate:workspaces
+npm run validate:package-packs
 npm run validate:files
 ```
 
@@ -41,6 +44,19 @@ Auto-generate the catalog:
 ```bash
 npm run generate:catalog
 ```
+
+## Publishing a plugin
+
+Standalone plugin publication is manual and separate from merging a PR. Before the first release, verify npm name availability and account access, then bump only the selected workspace to a new version and inspect its tarball.
+
+The `.github/workflows/publish-plugin.yml` workflow publishes one selected workspace per run. Before using it:
+
+1. Create the GitHub environment named `npm-publish` and configure required reviewers.
+2. Add an `NPM_TOKEN` secret to that environment.
+3. Confirm the selected package name is available and the workspace version has not already been published.
+4. Run **Actions → Publish standalone plugin**, select one of `guardrails`, `input-bell`, `model-router`, or `subagent`, and set `confirm_publish` to `true`. The publish job waits for environment approval after repository checks pass.
+
+The workflow is `workflow_dispatch`-only; merging or pushing code never publishes. Do not publish private workspaces such as `hello`. The umbrella package is released separately; installing an umbrella and a standalone copy of the same plugin can load it twice.
 
 ## Managing custom models
 

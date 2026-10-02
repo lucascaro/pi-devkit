@@ -7,7 +7,7 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import inputBellExtension from "../../extensions/input-bell/index.ts";
+import inputBellExtension from "../../packages/input-bell/extensions/input-bell/index.ts";
 
 const BEL = "\x07";
 

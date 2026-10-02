@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, it, expect } from "vitest";
-import { resolveRouterModel } from "../../../extensions/subagent/backends/sdk-backend.ts";
-import { discoverAgents } from "../../../extensions/subagent/agents.ts";
+import { resolveRouterModel } from "../../../packages/subagent/extensions/subagent/router-model.ts";
+import { discoverAgents } from "../../../packages/subagent/extensions/subagent/agents.ts";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
 const BUNDLED_AGENTS_DIR = path.join(
   import.meta.dirname,
-  "../../../extensions/subagent/agents",
+  "../../../packages/subagent/extensions/subagent/agents",
 );
 
 describe("scout subagent end-to-end", () => {
@@ -22,12 +22,9 @@ describe("scout subagent end-to-end", () => {
     projectDir = path.join(tempRoot, "project");
     fs.mkdirSync(agentDir, { recursive: true });
     fs.mkdirSync(path.join(projectDir, ".pi"), { recursive: true });
-    fs.copyFileSync(
-      path.join(
-        import.meta.dirname,
-        "../../../extensions/model-router/model-router.example.json",
-      ),
+    fs.writeFileSync(
       path.join(projectDir, ".pi", "model-router.json"),
+      JSON.stringify({ profiles: { test: { low: { model: "openai/scout-low" } } } }),
     );
     process.env.PI_CODING_AGENT_DIR = agentDir;
   });
@@ -50,12 +47,9 @@ describe("scout subagent end-to-end", () => {
     expect(frontmatter.model).toBe("router:low");
   });
 
-  it("resolves scout's router:low against the router config", async () => {
-    const resolved = await resolveRouterModel("router:low", projectDir);
-    // Should resolve to the first profile's low tier model
-    expect(resolved).toBeDefined();
-    expect(typeof resolved).toBe("string");
-    console.log(`Scout resolves to: ${resolved}`);
+  it("resolves scout's router:low against a trusted project router config", async () => {
+    const resolved = await resolveRouterModel("router:low", projectDir, true);
+    expect(resolved).toBe("openai/scout-low");
   });
 
   it("discovers scout agent with router:low model", async () => {

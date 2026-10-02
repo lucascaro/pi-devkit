@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import helloExtension from "../../extensions/hello/index.ts";
-import guardrailsExtension from "../../extensions/guardrails/index.ts";
-import inputBellExtension from "../../extensions/input-bell/index.ts";
-import askQuestionExtension from "../../extensions/ask-question/index.ts";
+import helloExtension from "../../packages/hello/extensions/hello/index.ts";
+import guardrailsExtension from "../../packages/guardrails/extensions/guardrails/index.ts";
+import inputBellExtension from "../../packages/input-bell/extensions/input-bell/index.ts";
+import askQuestionExtension from "../../packages/ask-question/extensions/ask-question/index.ts";
 
 function mockPi(): ExtensionAPI & { registerTool: ReturnType<typeof vi.fn>; registerCommand: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn> } {
   return {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerousCommandReason, isDangerousCommand } from "../../src/lib/dangerous-command.ts";
+import { dangerousCommandReason, isDangerousCommand } from "../../packages/guardrails/src/lib/dangerous-command.ts";
 
 describe("dangerous command detection", () => {
   it.each([
@@ -7,6 +7,23 @@ describe("dangerous command detection", () => {
     "sudo make install",
     "git reset --hard HEAD~1",
     "git push origin main --force-with-lease",
+    'git push origin "feature;foo" --force',
+    'git push origin "$(\nprintf %s main\n)" --force',
+    'git push origin "`\nprintf %s main\n`" --force',
+    'git push origin "$(git branch --show-current)" --force',
+    'git push origin "$(git branch --show-current || echo main)" --force',
+    'git push origin "`git branch --show-current || echo main`" --force',
+    "rm $(echo -rf) /tmp/example",
+    'printf "%s" "$(rm -- old.txt; rm -rf /tmp/example)"',
+    'printf "%s" "`rm -- old.txt; rm -rf /tmp/example`"',
+    "`rm -rf /tmp/example`",
+    "\\rm -rf /tmp/example",
+    "rm -- old.txt\nrm -rf important",
+    "rm -r -f /tmp/example",
+    "rm --recursive /tmp/example",
+    "true;rm -rf /tmp/example",
+    "true;git push -f origin main",
+    "/usr/bin/sudo whoami",
     "chmod -R 777 .",
     "kubectl delete namespace prod",
     "psql -c 'DROP TABLE users'"
@@ -16,7 +33,10 @@ describe("dangerous command detection", () => {
 
   it.each([
     "rm file.txt",
+    "rm -f file.txt",
     "git status",
+    'git push origin "feature;foo"',
+    "git push origin main\nprintf %s --force",
     "npm test",
     "kubectl get pods",
     "psql -c 'select * from users limit 1'"
