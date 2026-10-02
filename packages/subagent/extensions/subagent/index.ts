@@ -18,6 +18,7 @@ import { discoverAgents, formatAgentList } from "./agents.ts";
 import { Coordinator } from "./coordinator.ts";
 import { renderSubagentCall } from "./render.ts";
 import { renderSubagentResult, type SubagentDetails } from "./render-result.ts";
+import { truncateOutput } from "./output.ts";
 import type {
   AgentDefinition,
   AgentResult,
@@ -137,6 +138,7 @@ export default function subagentExtension(pi: ExtensionAPI): void {
         agents,
         cwd: ctx.cwd,
         signal,
+        projectTrusted,
         parentModel: ctx.model,
         parentThinkingLevel: ctx.thinkingLevel,
         maxTasks: params.maxTasks,
@@ -220,7 +222,8 @@ export default function subagentExtension(pi: ExtensionAPI): void {
   pi.registerCommand("subagent-list", {
     description: "List available subagents",
     handler: async (_args, ctx) => {
-      const discovery = await discoverAgents(ctx.cwd, "both", [BUNDLED_AGENTS_DIR]);
+      const scope: AgentScope = ctx.isProjectTrusted() ? "both" : "user";
+      const discovery = await discoverAgents(ctx.cwd, scope, [BUNDLED_AGENTS_DIR]);
       const { text, remaining } = formatAgentList(discovery.agents, 50);
       const line = remaining > 0 ? `${text} (+${remaining} more)` : text;
       ctx.ui.notify(`Subagents: ${line}`, "info");
@@ -233,14 +236,4 @@ function getResultOutput(result: AgentResult): string {
     return result.errorMessage || getFinalOutput(result.messages) || "(no output)";
   }
   return getFinalOutput(result.messages) || "(no output)";
-}
-
-function truncateOutput(output: string, maxBytes: number): string {
-  const byteLength = Buffer.byteLength(output, "utf8");
-  if (byteLength <= maxBytes) return output;
-  let truncated = output.slice(0, maxBytes);
-  while (Buffer.byteLength(truncated, "utf8") > maxBytes) {
-    truncated = truncated.slice(0, -1);
-  }
-  return `${truncated}\n\n[Output truncated: ${byteLength - Buffer.byteLength(truncated, "utf8")} bytes omitted. Full output preserved in tool details.]`;
 }

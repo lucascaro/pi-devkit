@@ -25,11 +25,12 @@ issue: 29
 pr: 30                    # optional pre-merge; filled when PR opens
 type: added | changed | fixed | removed | deprecated | security
 bump: major | minor | patch | none
+packages: "@scope/package-a, @scope/package-b"  # optional workspace packages affected
 ---
 - **Headline line.** Body bullets land verbatim under the `### <Type>` heading in `CHANGELOG.md`'s `[Unreleased]` section. Keep the headline imperative and outcome-focused; bullets explain the user-facing change, not the implementation.
 ```
 
-Required: `issue`, `type`, `bump`. Optional: `pr`.
+Required: `type`, `bump`. Optional: `issue`, `pr`, `packages`. `packages` names the affected npm workspaces for release planning; it does not publish or version them automatically.
 
 `type` values follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) (lowercase here, capitalized in the rendered section heading).
 

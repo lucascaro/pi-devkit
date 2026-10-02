@@ -5,8 +5,8 @@ import {
   isFailedResult,
   type AgentResult,
   type Message,
-} from "../../../extensions/subagent/types.ts";
-import { formatTokens, formatUsageStats } from "../../../extensions/subagent/render.ts";
+} from "../../../packages/subagent/extensions/subagent/types.ts";
+import { formatTokens, formatUsageStats } from "../../../packages/subagent/extensions/subagent/render.ts";
 
 function assistantMessage(text: string, overrides: Partial<Extract<Message, { role: "assistant" }>> = {}): Message {
   return {

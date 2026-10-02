@@ -1,4 +1,12 @@
-# Subagent Extension
+# Pi Subagent
+
+Install this extension on its own:
+
+```bash
+pi install npm:@lucascaro/pi-subagent
+```
+
+It is also included in the batteries-included `@lucascaro/pi-devkit` package. Choose one package by default; installing both can load the subagent extension twice.
 
 Delegate tasks to specialized subagents with isolated context windows. Each
 subagent runs with its own context, model, and tool set, so it doesn't pollute
@@ -96,12 +104,17 @@ Override any of them by creating an agent with the same name in
 - **Project-local agents** (`.pi/agents/`) are only loaded in **trusted**
   projects. In an untrusted project, requesting `agentScope: "project"` or
   `"both"` falls back to user-level agents with a note explaining why.
+- Project-level router overrides from `.pi/model-router.json` are used only in
+  trusted projects; global router profiles remain available in untrusted ones.
 - The `subprocess` backend runs each subagent in a separate process with its
   own tool sandbox; use `isolation: process` for agents that should never run
   in-process.
 - Subagents inherit the parent session's model auth. They run with your system
   permissions — review agent definitions before installing packages that ship
   them.
+- SDK subagents block Bash commands classified as destructive or
+  privilege-sensitive by pi-devkit guardrails. SDK sessions cannot show a
+  confirmation prompt, so these commands are blocked rather than confirmed.
 
 ## Usage examples
 

@@ -6,8 +6,9 @@
  * resource efficiency (one provider/auth resolution, one model catalog).
  *
  * The agent's system prompt is injected via a DefaultResourceLoader with
- * appendSystemPrompt, and extension/skill/prompt/theme loading is disabled to
- * avoid recursion (loading the subagent extension itself) and heavy I/O.
+ * appendSystemPrompt. User extensions/skills/prompts/themes are disabled to
+ * avoid recursion and heavy I/O; a targeted inline guardrail still blocks
+ * dangerous Bash calls because SDK subagents have no confirmation UI.
  */
 
 import {
@@ -30,73 +31,8 @@ import type {
   UsageStats,
 } from "../types.ts";
 import { emptyUsage, resolveSystemPrompt } from "../types.ts";
-
-// Lazy import to avoid loading the model-router extension unless needed.
-let _loadRouterConfig: ((cwd: string) => any) | undefined;
-async function getLoadRouterConfig() {
-  if (_loadRouterConfig) return _loadRouterConfig;
-  try {
-    const mod = await import("../../model-router/config.js");
-    _loadRouterConfig = mod.loadRouterConfig;
-  } catch {
-    _loadRouterConfig = undefined;
-  }
-  return _loadRouterConfig;
-}
-
-/**
- * Resolve a "router:" prefixed model reference against the router config.
- * Returns the canonical model string, or undefined if the router config
- * is unavailable or the reference is invalid.
- */
-export async function resolveRouterModel(
-  ref: string,
-  cwd: string,
-): Promise<string | undefined> {
-  const loader = await getLoadRouterConfig();
-  if (!loader) return undefined;
-
-  const result = loader(cwd);
-  if (!result?.config?.profiles) return undefined;
-
-  // Parse "router:low" → tier = "low", default profile = first available
-  const prefix = "router:";
-  if (!ref.startsWith(prefix)) return undefined;
-  const tierStr = ref.slice(prefix.length).trim();
-  const validTiers = ["high", "medium", "low"] as const;
-  const tier: "high" | "medium" | "low" | undefined = validTiers.includes(tierStr as typeof validTiers[number])
-    ? (tierStr as "high" | "medium" | "low")
-    : undefined;
-  if (!tier) return undefined;
-  // TypeScript doesn't narrow after the above if, so we assert.
-  const tierSafe = tier!;
-
-  const profiles = result.config.profiles;
-  const profileNames = Object.keys(profiles);
-
-  // Use first profile if no name specified, or try "router:<profile>:<tier>"
-  if (profileNames.length === 0) return undefined;
-
-  // Check for "router:<profile>:<tier>" format
-  const parts = ref.slice(prefix.length).split(":");
-  if (parts.length === 2) {
-    const profileName = parts[0] as string;
-    const profileTierStr = parts[1] as string;
-    const profile = profiles[profileName];
-    if (profile && Object.hasOwn(profile, profileTierStr)) {
-      const tierConfig = profile[profileTierStr] as { model?: string } | undefined;
-      if (tierConfig?.model) return tierConfig.model;
-    }
-  }
-
-  // Default profile — use tier in a type-safe way
-  const defaultProfileName = profileNames[0] as string;
-  const defaultProfile = profiles[defaultProfileName] as Record<string, { model?: string } | undefined>;
-  if (!defaultProfile) return undefined;
-  const tierConfig = defaultProfile[tierSafe];
-  if (tierConfig?.model) return tierConfig.model;
-  return undefined;
-}
+import { resolveRouterModel } from "../router-model.ts";
+import { sdkSubagentGuardrails } from "../sdk-guardrails.ts";
 
 // ---------------------------------------------------------------------------
 // Shared ModelRuntime (singleton)
@@ -138,6 +74,26 @@ function toStandardMessages(messages: Array<{ role: string }>): Message[] {
   ) as Message[];
 }
 
+export function createSdkSubagentResourceLoader(
+  cwd: string,
+  agentDir: string,
+  systemPrompt: string,
+): DefaultResourceLoader {
+  const loaderOptions: ConstructorParameters<typeof DefaultResourceLoader>[0] = {
+    cwd,
+    agentDir,
+    noExtensions: true,
+    noSkills: true,
+    noPromptTemplates: true,
+    noThemes: true,
+    extensionFactories: [sdkSubagentGuardrails],
+  };
+  if (systemPrompt.trim()) {
+    loaderOptions.appendSystemPrompt = [systemPrompt];
+  }
+  return new DefaultResourceLoader(loaderOptions);
+}
+
 // ---------------------------------------------------------------------------
 // SDK backend
 // ---------------------------------------------------------------------------
@@ -155,35 +111,27 @@ export class SDKBackend implements Backend {
     let thinkingLevel = def.thinkingLevel ?? options.parentThinkingLevel;
 
     if (def.model) {
-      // Check for router: prefix — resolve against router config.
-      let modelRef = def.model;
+      // Check for router: prefix — resolve against trusted router config.
+      let modelRef: string | undefined = def.model;
       if (def.model.startsWith("router:")) {
-        const resolvedRouter = await resolveRouterModel(def.model, options.cwd);
-        if (resolvedRouter) {
-          modelRef = resolvedRouter;
-        } else {
+        modelRef = await resolveRouterModel(
+          def.model,
+          options.cwd,
+          options.projectTrusted ?? false,
+        );
+        if (!modelRef) {
           // Router config unavailable or invalid — fall through to parent inheritance.
           model = options.parentModel;
         }
       }
 
-      if (modelRef !== def.model) {
-        // Router resolved to a concrete model — resolve it against the runtime.
+      if (modelRef) {
         const resolved = resolveCliModel({ cliModel: modelRef, modelRuntime: runtime });
         if (resolved.model) {
           model = resolved.model;
           if (!def.thinkingLevel && resolved.thinkingLevel) thinkingLevel = resolved.thinkingLevel;
         } else {
           return errorResult(def.name, task, `Model "${modelRef}" not available: ${resolved.error ?? resolved.warning ?? "no match"}`);
-        }
-      } else {
-        // Not a router ref — resolve as before.
-        const resolved = resolveCliModel({ cliModel: def.model, modelRuntime: runtime });
-        if (resolved.model) {
-          model = resolved.model;
-          if (!def.thinkingLevel && resolved.thinkingLevel) thinkingLevel = resolved.thinkingLevel;
-        } else {
-          return errorResult(def.name, task, `Model "${def.model}" not available: ${resolved.error ?? resolved.warning ?? "no match"}`);
         }
       }
     } else {
@@ -197,20 +145,9 @@ export class SDKBackend implements Backend {
     // Resolve the system prompt (supports dynamic TS agents).
     const systemPrompt = await resolveSystemPrompt(def, { cwd: options.cwd });
 
-    // Build a resource loader that appends the agent's system prompt and skips
-    // extensions/skills/prompts/themes (avoids recursion + heavy I/O).
-    const loaderOptions: ConstructorParameters<typeof DefaultResourceLoader>[0] = {
-      cwd: options.cwd,
-      agentDir: getAgentDir(),
-      noExtensions: true,
-      noSkills: true,
-      noPromptTemplates: true,
-      noThemes: true,
-    };
-    if (systemPrompt.trim()) {
-      loaderOptions.appendSystemPrompt = [systemPrompt];
-    }
-    const loader = new DefaultResourceLoader(loaderOptions);
+    // Keep user resources disabled to avoid recursion and heavy I/O while
+    // retaining the SDK-only dangerous-command guardrail.
+    const loader = createSdkSubagentResourceLoader(options.cwd, getAgentDir(), systemPrompt);
     await loader.reload();
 
     const sessionManager = SessionManager.inMemory(options.cwd);

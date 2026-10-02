@@ -6,14 +6,14 @@
 
 | Name | Path | Purpose |
 | --- | --- | --- |
-| ambiguity-detection | `./extensions/ambiguity-detection` | No description found. |
-| anti-people-pleasing | `./extensions/anti-people-pleasing` | No description found. |
-| ask-question | `./extensions/ask-question` | Text for the action button (e.g. |
-| guardrails | `./extensions/guardrails` | Show pi-devkit guardrail status |
-| hello | `./extensions/hello` | Greet a person by name. Use for testing that pi-devkit custom tools are loaded. |
-| input-bell | `./extensions/input-bell` | Show input-bell status |
-| model-router | `./extensions/model-router` | Intelligent per-turn model router with tiered routing, LLM classifier, and configurable profiles |
-| subagent | `./extensions/subagent` | List available subagents |
+| ambiguity-detection | `./packages/ambiguity-detection/extensions/ambiguity-detection` | Detect ambiguity and request clarification before acting. |
+| anti-people-pleasing | `./packages/anti-people-pleasing/extensions/anti-people-pleasing` | Reduce people-pleasing behavior and encourage direct responses. |
+| ask-question | `./packages/ask-question/extensions/ask-question` | Ask the user a question with numbered options. |
+| guardrails | `./packages/guardrails/extensions/guardrails` | Block high-risk bash commands unless confirmed. |
+| hello | `./packages/hello/extensions/hello` | Example Pi extension for testing custom tools. |
+| input-bell | `./packages/input-bell/extensions/input-bell` | Ring the terminal bell when Pi needs your input. |
+| model-router | `./packages/model-router/extensions/model-router` | Intelligent per-turn model routing with configurable profiles. |
+| subagent | `./packages/subagent/extensions/subagent` | Delegate tasks to specialized agents with isolated context. |
 
 ## Skills
 
@@ -27,9 +27,9 @@
 | --- | --- | --- |
 | `plan` | `./prompts/plan.md` | Create, evaluate, and refine an implementation plan before starting work |
 | `review` | `./prompts/review.md` | Review code changes for bugs, security, maintainability, and Pi best practices |
-| `implement-and-review` | `./extensions/subagent/workflows/implement-and-review.md` | Worker implements, reviewer reviews, worker applies feedback |
-| `implement` | `./extensions/subagent/workflows/implement.md` | Full implementation workflow - scout gathers context, planner creates plan, worker implements |
-| `scout-and-plan` | `./extensions/subagent/workflows/scout-and-plan.md` | Scout gathers context, planner creates implementation plan (no implementation) |
+| `implement-and-review` | `./packages/subagent/extensions/subagent/workflows/implement-and-review.md` | Worker implements, reviewer reviews, worker applies feedback |
+| `implement` | `./packages/subagent/extensions/subagent/workflows/implement.md` | Full implementation workflow - scout gathers context, planner creates plan, worker implements |
+| `scout-and-plan` | `./packages/subagent/extensions/subagent/workflows/scout-and-plan.md` | Scout gathers context, planner creates implementation plan (no implementation) |
 
 ## Themes
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import askQuestionExtension from "../../extensions/ask-question/index.ts";
+import askQuestionExtension from "../../packages/ask-question/extensions/ask-question/index.ts";
 
 function mockPi(): ExtensionAPI & {
   registerTool: ReturnType<typeof vi.fn>;

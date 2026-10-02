@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Coordinator } from "../../../extensions/subagent/coordinator.ts";
+import { Coordinator } from "../../../packages/subagent/extensions/subagent/coordinator.ts";
 import {
   emptyUsage,
   type AgentDefinition,
   type AgentResult,
   type Backend,
   type ExecuteOptions,
-} from "../../../extensions/subagent/types.ts";
+} from "../../../packages/subagent/extensions/subagent/types.ts";
 
 function makeAgent(overrides: Partial<AgentDefinition> = {}): AgentDefinition {
   return {
@@ -105,6 +105,29 @@ describe("Coordinator.backend selection", () => {
     expect(subprocess.calls).toHaveLength(1);
     expect(sdk.calls).toHaveLength(0);
   });
+
+  it("passes project trust to the selected backend", async () => {
+    let receivedTrust: boolean | undefined;
+    const sdk: Backend = {
+      async execute(def, _task, options) {
+        receivedTrust = options.projectTrusted;
+        return makeResult(def.name);
+      },
+    };
+    const coordinator = new Coordinator({ sdk, subprocess: mockBackend("subprocess", (a) => makeResult(a)) });
+    const agents = new Map([["a", makeAgent({ name: "a" })]]);
+
+    await coordinator.dispatch({
+      mode: "single",
+      agent: "a",
+      task: "t",
+      agents,
+      cwd: "/tmp",
+      projectTrusted: false,
+    });
+
+    expect(receivedTrust).toBe(false);
+  });
 });
 
 describe("Coordinator.parallel", () => {
@@ -125,6 +148,34 @@ describe("Coordinator.parallel", () => {
     });
     expect(results).toHaveLength(2);
     expect(sdk.calls).toHaveLength(2);
+  });
+
+  it("does not carry project trust to tasks in another working directory", async () => {
+    const received: Array<{ cwd: string; projectTrusted: boolean | undefined }> = [];
+    const sdk: Backend = {
+      async execute(def, _task, options) {
+        received.push({ cwd: options.cwd, projectTrusted: options.projectTrusted });
+        return makeResult(def.name);
+      },
+    };
+    const coordinator = new Coordinator({ sdk, subprocess: mockBackend("subprocess", (a) => makeResult(a)) });
+    const agents = new Map([["a", makeAgent({ name: "a" })]]);
+
+    await coordinator.dispatch({
+      mode: "parallel",
+      tasks: [
+        { agent: "a", task: "same project", cwd: "/tmp/project" },
+        { agent: "a", task: "other checkout", cwd: "/tmp/other" },
+      ],
+      agents,
+      cwd: "/tmp/project",
+      projectTrusted: true,
+    });
+
+    expect(received).toEqual([
+      { cwd: "/tmp/project", projectTrusted: true },
+      { cwd: "/tmp/other", projectTrusted: false },
+    ]);
   });
 
   it("rejects too many tasks", async () => {

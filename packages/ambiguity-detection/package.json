@@ -1,0 +1,15 @@
+{
+  "name": "@lucascaro/pi-ambiguity-detection",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Detect ambiguity and request clarification before acting.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "keywords": ["pi-package", "pi", "coding-agent", "ambiguity"],
+  "files": ["extensions", "README.md", "LICENSE"],
+  "pi": { "extensions": ["./extensions"] },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.84.4"
+  }
+}

@@ -11,15 +11,15 @@
   ],
   "license": "MIT",
   "type": "module",
+  "workspaces": ["packages/*"],
   "engines": {
     "node": ">=20"
   },
   "files": [
-    "extensions",
+    "packages",
     "skills",
     "prompts",
     "themes",
-    "src",
     "docs",
     "README.md",
     "CHANGELOG.md",
@@ -27,36 +27,44 @@
   ],
   "pi": {
     "extensions": [
-      "./extensions"
+      "./packages/ambiguity-detection/extensions",
+      "./packages/anti-people-pleasing/extensions",
+      "./packages/ask-question/extensions",
+      "./packages/guardrails/extensions",
+      "./packages/hello/extensions",
+      "./packages/input-bell/extensions",
+      "./packages/model-router/extensions",
+      "./packages/subagent/extensions"
     ],
     "skills": [
       "./skills"
     ],
     "prompts": [
       "./prompts",
-      "./extensions/subagent/workflows"
+      "./packages/subagent/extensions/subagent/workflows"
     ],
     "themes": [
       "./themes"
     ]
   },
   "peerDependencies": {
+    "@earendil-works/pi-agent-core": "*",
     "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": ">=0.84.4",
     "@earendil-works/pi-tui": "*",
     "typebox": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-agent-core": "0.85.0",
-    "@earendil-works/pi-ai": "0.85.0",
-    "@earendil-works/pi-coding-agent": "0.85.0",
-    "@earendil-works/pi-server": "0.85.0",
-    "@earendil-works/pi-tui": "0.85.0",
+    "@earendil-works/pi-agent-core": "0.99.1",
+    "@earendil-works/pi-ai": "0.99.1",
+    "@earendil-works/pi-coding-agent": "0.99.1",
+    "@earendil-works/pi-server": "0.99.1",
+    "@earendil-works/pi-tui": "0.99.1",
     "@types/node": "latest",
     "tsx": "latest",
     "typebox": "latest",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "^4.1.11"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -66,8 +74,10 @@
     "validate:prompts": "tsx scripts/validate-prompts.ts",
     "validate:extensions": "tsx scripts/validate-extensions.ts",
     "validate:pi-manifest": "tsx scripts/validate-pi-manifest.ts",
+    "validate:workspaces": "tsx scripts/validate-workspaces.ts",
+    "validate:package-packs": "tsx scripts/validate-package-packs.ts",
     "validate:files": "tsx scripts/validate-files.ts",
-    "validate": "npm run validate:skills && npm run validate:themes && npm run validate:prompts && npm run validate:extensions && npm run validate:pi-manifest && npm run validate:files",
+    "validate": "npm run validate:skills && npm run validate:themes && npm run validate:prompts && npm run validate:extensions && npm run validate:pi-manifest && npm run validate:workspaces && npm run validate:package-packs && npm run validate:files",
     "generate:catalog": "tsx scripts/generate-catalog.ts > docs/catalog.md",
     "check": "npm run typecheck && npm run validate && npm run test"
   }

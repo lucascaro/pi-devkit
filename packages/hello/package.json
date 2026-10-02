@@ -1,0 +1,16 @@
+{
+  "name": "@lucascaro/pi-hello-example",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example Pi extension for testing custom tools.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "keywords": ["pi-package", "pi", "example"],
+  "files": ["extensions", "LICENSE"],
+  "pi": { "extensions": ["./extensions"] },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.84.4",
+    "typebox": "*"
+  }
+}
