@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
 import { resolveRouterModel } from "../../../packages/subagent/extensions/subagent/router-model.ts";
 import { discoverAgents } from "../../../packages/subagent/extensions/subagent/agents.ts";
 import * as fs from "node:fs";
@@ -11,6 +11,32 @@ const BUNDLED_AGENTS_DIR = path.join(
 );
 
 describe("scout subagent end-to-end", () => {
+  let tempRoot: string;
+  let projectDir: string;
+  let previousAgentDir: string | undefined;
+
+  beforeEach(() => {
+    previousAgentDir = process.env.PI_CODING_AGENT_DIR;
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "scout-router-test-"));
+    const agentDir = path.join(tempRoot, "agent");
+    projectDir = path.join(tempRoot, "project");
+    fs.mkdirSync(agentDir, { recursive: true });
+    fs.mkdirSync(path.join(projectDir, ".pi"), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, ".pi", "model-router.json"),
+      JSON.stringify({ profiles: { test: { low: { model: "openai/scout-low" } } } }),
+    );
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+  });
+
+  afterEach(() => {
+    if (previousAgentDir === undefined) {
+      delete process.env.PI_CODING_AGENT_DIR;
+    } else {
+      process.env.PI_CODING_AGENT_DIR = previousAgentDir;
+    }
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
   it("resolves scout's router:low to a real model", async () => {
     const scoutPath = path.join(BUNDLED_AGENTS_DIR, "scout.md");
     const { parseFrontmatter } = await import(
@@ -22,30 +48,13 @@ describe("scout subagent end-to-end", () => {
   });
 
   it("resolves scout's router:low against a trusted project router config", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "scout-router-project-"));
-    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "scout-router-agent-"));
-    const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
-    process.env.PI_CODING_AGENT_DIR = agentDir;
-
-    try {
-      fs.mkdirSync(path.join(cwd, ".pi"), { recursive: true });
-      fs.writeFileSync(
-        path.join(cwd, ".pi", "model-router.json"),
-        JSON.stringify({ profiles: { test: { low: { model: "openai/scout-low" } } } }),
-      );
-      const resolved = await resolveRouterModel("router:low", cwd, true);
-      expect(resolved).toBe("openai/scout-low");
-    } finally {
-      if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
-      else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
-      fs.rmSync(cwd, { recursive: true, force: true });
-      fs.rmSync(agentDir, { recursive: true, force: true });
-    }
+    const resolved = await resolveRouterModel("router:low", projectDir, true);
+    expect(resolved).toBe("openai/scout-low");
   });
 
   it("discovers scout agent with router:low model", async () => {
     const discovery = await discoverAgents(
-      process.cwd(),
+      projectDir,
       "user",
       [BUNDLED_AGENTS_DIR],
     );
